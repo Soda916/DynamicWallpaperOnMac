@@ -160,7 +160,7 @@ final class RawPlayerView: NSView {
         super.init(frame: frameRect)
         wantsLayer = true
         layer?.addSublayer(playerLayer)
-        playerLayer.videoGravity = .resizeAspectFill
+        playerLayer.videoGravity = .resizeAspect
         layer?.cornerRadius = 8
         layer?.masksToBounds = true
     }
@@ -344,7 +344,9 @@ final class DashboardWindowController: NSWindowController {
         mainContentStack.spacing = 24
         mainContentStack.distribution = .fill
 
-        let rootStack = NSStackView(views: [headerStack, NSBox(), mainContentStack])
+        let separator = NSBox()
+        separator.boxType = .separator
+        let rootStack = NSStackView(views: [headerStack, separator, mainContentStack])
         rootStack.orientation = .vertical
         rootStack.spacing = 14
         rootStack.translatesAutoresizingMaskIntoConstraints = false
@@ -401,8 +403,11 @@ final class DashboardWindowController: NSWindowController {
             }
         }
 
-        WallpaperController.shared.autoPauseEngine.onPauseStateChanged = { [weak self] isPaused in
-            DispatchQueue.main.async {
+        // NotificationCenter Observer for Multi-Observer 100% State Sync (Item 3 & 4)
+        let center = NotificationCenter.default
+
+        center.addObserver(forName: .autoPausePauseStateDidChange, object: nil, queue: .main) { [weak self] notif in
+            if let isPaused = notif.object as? Bool {
                 if isPaused {
                     self?.statusBadge.stringValue = "Auto-Paused (Fullscreen/Maximized)"
                     self?.statusBadge.textColor = .systemOrange
@@ -412,9 +417,6 @@ final class DashboardWindowController: NSWindowController {
                 }
             }
         }
-
-        // NotificationCenter Observer for Multi-Observer 100% State Sync (Item 3 & 4)
-        let center = NotificationCenter.default
 
         center.addObserver(forName: .wallpaperMuteStateDidChange, object: nil, queue: .main) { [weak self] notif in
             if let isMuted = notif.object as? Bool {
@@ -475,6 +477,7 @@ final class DashboardWindowController: NSWindowController {
     }
 
     @objc public func importWallpaper() {
+        NSApp.activate(ignoringOtherApps: true)
         let openPanel = NSOpenPanel()
         openPanel.title = "Select Video Wallpaper or GIF"
         openPanel.allowedContentTypes = [.movie, .mpeg4Movie, .quickTimeMovie, .gif]

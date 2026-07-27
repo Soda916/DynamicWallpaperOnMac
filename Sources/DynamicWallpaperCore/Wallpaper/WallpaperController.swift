@@ -9,7 +9,6 @@ public extension Notification.Name {
     static let wallpaperAudioDuckingDidChange = Notification.Name("wallpaperAudioDuckingDidChange")
 }
 
-/// Central manager orchestrating media playback, display window layers, package imports, and auto-pause triggers.
 public final class WallpaperController: @unchecked Sendable {
     public static let shared = WallpaperController()
 
@@ -20,13 +19,20 @@ public final class WallpaperController: @unchecked Sendable {
     public private(set) var activeWallpaperURL: URL?
     public var onWallpaperChanged: ((URL?) -> Void)?
 
+    private var autoPauseObserver: NSObjectProtocol?
+
     private init() {
         setupAutoPauseIntegration()
     }
 
     private func setupAutoPauseIntegration() {
-        autoPauseEngine.onPauseStateChanged = { [weak self] isPaused in
+        autoPauseObserver = NotificationCenter.default.addObserver(
+            forName: .autoPausePauseStateDidChange,
+            object: nil,
+            queue: .main
+        ) { [weak self] notif in
             guard let self = self else { return }
+            guard let isPaused = notif.object as? Bool else { return }
             if isPaused {
                 AppLogger.shared.info("WallpaperController: Auto-pausing desktop playback")
                 self.playbackCore.pause()
@@ -40,7 +46,6 @@ public final class WallpaperController: @unchecked Sendable {
         autoPauseEngine.startMonitoring()
     }
 
-    /// Selects and applies a wallpaper video or GIF to all connected desktop windows.
     public func importAndApplyWallpaper(from url: URL, completion: ((Result<URL, Error>) -> Void)? = nil) {
         AppLogger.shared.info("[CHATTER] WallpaperController: Received user request to import wallpaper: \(url.path)")
 

@@ -39,14 +39,12 @@ public final class MediaPlaybackCore: @unchecked Sendable {
     }
 
     public func play() {
-        player.rate = 1.0
         player.play()
         AppLogger.shared.debug("MediaPlaybackCore: Playback rate set to 1.0 for \(currentURL?.lastPathComponent ?? "unknown")")
     }
 
     public func pause() {
         player.pause()
-        player.rate = 0.0
         AppLogger.shared.debug("MediaPlaybackCore: Playback paused")
     }
 

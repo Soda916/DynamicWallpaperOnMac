@@ -1,11 +1,14 @@
 import AppKit
 import CoreGraphics
 
+public extension Notification.Name {
+    static let autoPausePauseStateDidChange = Notification.Name("autoPausePauseStateDidChange")
+}
+
 /// Monitors system states (Mission Control, Stage Manager, Launchpad, Fullscreen Apps, Option+Green Button Zoom) to trigger auto-pausing.
 public final class AutoPauseEngine {
     public static let shared = AutoPauseEngine()
 
-    public var onPauseStateChanged: ((Bool) -> Void)?
     private(set) public var isPaused: Bool = false
     public var isEnabled: Bool = false {
         didSet {
@@ -26,7 +29,6 @@ public final class AutoPauseEngine {
 
     public func startMonitoring() {
         timer?.invalidate()
-        // Poll system states at a low frequency (1Hz) to maintain near zero CPU footprint
         timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
             self?.evaluateAutoPauseConditions()
         }
@@ -48,36 +50,32 @@ public final class AutoPauseEngine {
         }
     }
 
-    /// Evaluates active window configurations to determine if live wallpaper rendering should pause.
     public func evaluateAutoPauseConditions() {
         guard isEnabled else {
             if isPaused {
                 isPaused = false
                 AppLogger.shared.info("AutoPauseEngine: AutoPause disabled, resuming playback")
-                onPauseStateChanged?(false)
+                NotificationCenter.default.post(name: .autoPausePauseStateDidChange, object: false)
             }
             return
         }
 
         var shouldPause = false
 
-        // Check if frontmost app is in native macOS Fullscreen mode OR Option+Green button maximized mode
         if let frontmostApp = NSWorkspace.shared.frontmostApplication {
             if isAppMaximizedOrFullscreen(app: frontmostApp) {
                 shouldPause = true
             }
         }
 
-        // State transition evaluation
         if shouldPause != isPaused {
             isPaused = shouldPause
             AppLogger.shared.info("AutoPauseEngine: State changed. Paused = \(isPaused)")
-            onPauseStateChanged?(isPaused)
+            NotificationCenter.default.post(name: .autoPausePauseStateDidChange, object: isPaused)
         }
     }
 
     private func isAppMaximizedOrFullscreen(app: NSRunningApplication) -> Bool {
-        // Exclude Finder and our own application PID
         if app.bundleIdentifier == "com.apple.finder" || app.processIdentifier == NSRunningApplication.current.processIdentifier {
             return false
         }
@@ -100,13 +98,9 @@ public final class AutoPauseEngine {
             }
             if let boundsDict = info[kCGWindowBounds as String] as? [String: Any],
                let bounds = CGRect(dictionaryRepresentation: boundsDict as CFDictionary) {
-                
-                // 1. Check Fullscreen Space (matches full screen bounds)
                 if bounds.width >= screenFrame.width - 10 && bounds.height >= screenFrame.height - 10 {
                     return true
                 }
-
-                // 2. Check Option + Green Button Zoom Maximize (matches visibleFrame bounds excluding Menu Bar / Dock)
                 if bounds.width >= visibleFrame.width - 20 && bounds.height >= visibleFrame.height - 20 {
                     return true
                 }
