@@ -6,6 +6,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem?
     private var dashboardController: DashboardWindowController?
     private var config: AppConfig = AppConfig()
+    private var autoPauseMenuItem: NSMenuItem?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         AppLogger.shared.info("DynamicWallpaperEngine starting up...")
@@ -16,6 +17,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         } else {
             NSApp.setActivationPolicy(.regular)
         }
+
+        // Apply initial config to AutoPauseEngine
+        AutoPauseEngine.shared.isEnabled = config.autoPauseOnFullscreen
 
         setupStatusMenu()
     }
@@ -32,6 +36,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(NSMenuItem(title: "Import Wallpaper...", action: #selector(chooseWallpaper), keyEquivalent: "i"))
         menu.addItem(NSMenuItem(title: "Toggle Play / Pause", action: #selector(togglePlayPause), keyEquivalent: "p"))
         menu.addItem(NSMenuItem(title: "Mute Sound", action: #selector(toggleMute), keyEquivalent: "m"))
+        
+        let autoPauseItem = NSMenuItem(title: "Auto-Pause on Fullscreen", action: #selector(toggleAutoPause), keyEquivalent: "a")
+        autoPauseItem.state = config.autoPauseOnFullscreen ? .on : .off
+        autoPauseMenuItem = autoPauseItem
+        menu.addItem(autoPauseItem)
+
         menu.addItem(NSMenuItem.separator())
         menu.addItem(NSMenuItem(title: "Open Dashboard", action: #selector(openDashboard), keyEquivalent: "o"))
         menu.addItem(NSMenuItem.separator())
@@ -50,6 +60,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func togglePlayPause() {
         WallpaperController.shared.togglePlayPause()
+    }
+
+    @objc private func toggleAutoPause() {
+        config.autoPauseOnFullscreen.toggle()
+        let isEnabled = config.autoPauseOnFullscreen
+        AutoPauseEngine.shared.isEnabled = isEnabled
+        autoPauseMenuItem?.state = isEnabled ? .on : .off
+        dashboardController?.updateAutoPauseUI(isEnabled: isEnabled)
+        AppLogger.shared.info("AutoPause toggled via menu item: \(isEnabled)")
     }
 
     @objc private func openDashboard() {
@@ -91,13 +110,15 @@ final class DashboardWindowController: NSWindowController {
     private let importButton = NSButton(title: "Import / Select Wallpaper Video...", target: nil, action: nil)
     private let playPauseButton = NSButton(title: "Pause", target: nil, action: nil)
     private let muteButton = NSButton(title: "Mute", target: nil, action: nil)
+    private let autoPauseCheckbox = NSButton(checkboxWithTitle: "Enable Auto-Pause on Fullscreen", target: nil, action: nil)
+
     private let volumeSlider = NSSlider(value: 1.0, minValue: 0.0, maxValue: 1.0, target: nil, action: nil)
     private let volumeLabel = NSTextField(labelWithString: "Volume: 100%")
     private let footerStatusLabel = NSTextField(labelWithString: "Status: Ready")
 
     init() {
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 750, height: 480),
+            contentRect: NSRect(x: 0, y: 0, width: 750, height: 500),
             styleMask: [.titled, .closable, .miniaturizable, .resizable],
             backing: .buffered,
             defer: false
@@ -170,6 +191,7 @@ final class DashboardWindowController: NSWindowController {
 
         playPauseButton.bezelStyle = .rounded
         muteButton.bezelStyle = .rounded
+        autoPauseCheckbox.state = AutoPauseEngine.shared.isEnabled ? .on : .off
 
         let mediaControlStack = NSStackView(views: [playPauseButton, muteButton])
         mediaControlStack.orientation = .horizontal
@@ -185,6 +207,7 @@ final class DashboardWindowController: NSWindowController {
         let rightStack = NSStackView(views: [
             NSTextField(labelWithString: "Playback Controls"),
             mediaControlStack,
+            autoPauseCheckbox,
             volumeLabel,
             volumeSlider,
             footerStatusLabel
@@ -229,6 +252,9 @@ final class DashboardWindowController: NSWindowController {
         muteButton.target = self
         muteButton.action = #selector(toggleMute)
 
+        autoPauseCheckbox.target = self
+        autoPauseCheckbox.action = #selector(autoPauseToggled)
+
         volumeSlider.target = self
         volumeSlider.action = #selector(volumeSliderChanged)
     }
@@ -254,6 +280,10 @@ final class DashboardWindowController: NSWindowController {
                 }
             }
         }
+    }
+
+    public func updateAutoPauseUI(isEnabled: Bool) {
+        autoPauseCheckbox.state = isEnabled ? .on : .off
     }
 
     @objc public func importWallpaper() {
@@ -293,6 +323,12 @@ final class DashboardWindowController: NSWindowController {
         let isMuted = !WallpaperController.shared.playbackCore.player.isMuted
         WallpaperController.shared.setMuted(isMuted)
         muteButton.title = isMuted ? "Unmute" : "Mute"
+    }
+
+    @objc private func autoPauseToggled() {
+        let isEnabled = (autoPauseCheckbox.state == .on)
+        AutoPauseEngine.shared.isEnabled = isEnabled
+        AppLogger.shared.info("AutoPause toggled via checkbox: \(isEnabled)")
     }
 
     @objc private func volumeSliderChanged() {

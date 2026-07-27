@@ -9,7 +9,7 @@ public final class MediaPlaybackCore: @unchecked Sendable {
 
     public private(set) var currentURL: URL?
     public var isPlaying: Bool {
-        return player.timeControlStatus == .playing
+        return player.timeControlStatus == .playing || player.rate > 0
     }
 
     public init() {
@@ -31,15 +31,18 @@ public final class MediaPlaybackCore: @unchecked Sendable {
 
         player.replaceCurrentItem(with: item)
         setupLooping(for: item)
+        AppLogger.shared.info("MediaPlaybackCore: Loaded video asset from \(url.path)")
     }
 
     public func play() {
+        player.rate = 1.0
         player.play()
-        AppLogger.shared.debug("MediaPlaybackCore: Playback started for \(currentURL?.lastPathComponent ?? "unknown")")
+        AppLogger.shared.debug("MediaPlaybackCore: Playback rate set to 1.0 for \(currentURL?.lastPathComponent ?? "unknown")")
     }
 
     public func pause() {
         player.pause()
+        player.rate = 0.0
         AppLogger.shared.debug("MediaPlaybackCore: Playback paused")
     }
 
@@ -71,8 +74,10 @@ public final class MediaPlaybackCore: @unchecked Sendable {
             object: item,
             queue: .main
         ) { [weak self] _ in
-            self?.player.seek(to: .zero)
-            self?.player.play()
+            self?.player.seek(to: .zero) { _ in
+                self?.player.play()
+                self?.player.rate = 1.0
+            }
         }
     }
 }

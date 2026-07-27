@@ -19,25 +19,30 @@ public final class DisplayManager {
     }
 
     public func updateScreens(with player: AVPlayer) {
-        // Remove existing controllers for disconnected screens
         let currentScreens = Set(NSScreen.screens)
         let existingScreens = Set(controllers.keys)
 
+        // Remove controllers for disconnected screens
         for removedScreen in existingScreens.subtracting(currentScreens) {
             controllers[removedScreen]?.close()
             controllers.removeValue(forKey: removedScreen)
             AppLogger.shared.info("DisplayManager: Screen disconnected, closed desktop window")
         }
 
-        // Attach controllers to connected screens
+        // Always update player for all connected screens
         for screen in currentScreens {
-            if controllers[screen] == nil {
-                let controller = DesktopWindowController(screen: screen)
-                controller.setPlayer(player)
-                controller.showWindow(nil)
+            let controller: DesktopWindowController
+            if let existingController = controllers[screen] {
+                controller = existingController
+            } else {
+                controller = DesktopWindowController(screen: screen)
                 controllers[screen] = controller
                 AppLogger.shared.info("DisplayManager: Attached desktop window to screen: \(screen.localizedName)")
             }
+            
+            controller.setPlayer(player)
+            controller.showWindow(nil)
+            controller.window?.orderFrontRegardless()
         }
     }
 
