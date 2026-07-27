@@ -78,9 +78,10 @@
 git clone https://github.com/your-org/DynamicWallpaperEngine.git
 cd DynamicWallpaperEngine
 
-# 建置 macOS .app bundle 和發佈 zip
+# 建置 macOS .app bundle、發佈 zip 與 dmg 映像檔
 chmod +x scripts/build_app.sh
 ./scripts/build_app.sh
+# 產生的 .dmg 與 .zip 檔案將位於 build/ 目錄中。
 ```
 
 ---

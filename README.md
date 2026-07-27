@@ -78,9 +78,10 @@ This project adheres to a strict hierarchy of design decisions:
 git clone https://github.com/your-org/DynamicWallpaperEngine.git
 cd DynamicWallpaperEngine
 
-# Build macOS .app bundle and release zip
+# Build macOS .app bundle, release zip, and dmg
 chmod +x scripts/build_app.sh
 ./scripts/build_app.sh
+# The generated .dmg and .zip files will be available in the build/ directory.
 ```
 
 ---
