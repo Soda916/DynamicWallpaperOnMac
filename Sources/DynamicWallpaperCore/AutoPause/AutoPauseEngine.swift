@@ -1,13 +1,17 @@
 import AppKit
 import CoreGraphics
 
-/// Monitors system states (Mission Control, Stage Manager, Launchpad, Fullscreen Apps) to trigger auto-pausing.
+/// Monitors system states (Mission Control, Stage Manager, Launchpad, Fullscreen Apps, Option+Green Button Zoom) to trigger auto-pausing.
 public final class AutoPauseEngine {
     public static let shared = AutoPauseEngine()
 
     public var onPauseStateChanged: ((Bool) -> Void)?
     private(set) public var isPaused: Bool = false
-    public var isEnabled: Bool = false // Default to false so wallpapers play continuously unless user enables AutoPause
+    public var isEnabled: Bool = false {
+        didSet {
+            evaluateAutoPauseConditions()
+        }
+    }
 
     private var workspaceObserver: NSObjectProtocol?
     private var timer: Timer?
@@ -57,9 +61,9 @@ public final class AutoPauseEngine {
 
         var shouldPause = false
 
-        // Check if frontmost app is in native macOS Fullscreen mode
+        // Check if frontmost app is in native macOS Fullscreen mode OR Option+Green button maximized mode
         if let frontmostApp = NSWorkspace.shared.frontmostApplication {
-            if isAppNativeFullscreen(app: frontmostApp) {
+            if isAppMaximizedOrFullscreen(app: frontmostApp) {
                 shouldPause = true
             }
         }
@@ -72,7 +76,7 @@ public final class AutoPauseEngine {
         }
     }
 
-    private func isAppNativeFullscreen(app: NSRunningApplication) -> Bool {
+    private func isAppMaximizedOrFullscreen(app: NSRunningApplication) -> Bool {
         // Exclude Finder and our own application PID
         if app.bundleIdentifier == "com.apple.finder" || app.processIdentifier == NSRunningApplication.current.processIdentifier {
             return false
@@ -84,7 +88,8 @@ public final class AutoPauseEngine {
         }
 
         guard let mainScreen = NSScreen.main else { return false }
-        let mainScreenBounds = mainScreen.frame
+        let screenFrame = mainScreen.frame
+        let visibleFrame = mainScreen.visibleFrame
 
         for info in windowInfoList {
             guard let pid = info[kCGWindowOwnerPID as String] as? pid_t, pid == app.processIdentifier else {
@@ -95,8 +100,14 @@ public final class AutoPauseEngine {
             }
             if let boundsDict = info[kCGWindowBounds as String] as? [String: Any],
                let bounds = CGRect(dictionaryRepresentation: boundsDict as CFDictionary) {
-                // If window bounds match or exceed main screen bounds
-                if bounds.width >= mainScreenBounds.width && bounds.height >= mainScreenBounds.height {
+                
+                // 1. Check Fullscreen Space (matches full screen bounds)
+                if bounds.width >= screenFrame.width - 10 && bounds.height >= screenFrame.height - 10 {
+                    return true
+                }
+
+                // 2. Check Option + Green Button Zoom Maximize (matches visibleFrame bounds excluding Menu Bar / Dock)
+                if bounds.width >= visibleFrame.width - 20 && bounds.height >= visibleFrame.height - 20 {
                     return true
                 }
             }

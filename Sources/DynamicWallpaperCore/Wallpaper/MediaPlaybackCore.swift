@@ -1,13 +1,16 @@
 import Foundation
 import AVFoundation
 
-/// Core media player encapsulating AVPlayer streaming playback with automatic looping, volume control, and resource cleanup.
+/// Core media player encapsulating AVPlayer streaming playback with automatic looping, volume control, audio ducking, and resource cleanup.
 public final class MediaPlaybackCore: @unchecked Sendable {
     public private(set) var player: AVPlayer
     private var playerItemObserver: NSKeyValueObservation?
     private var loopObserver: NSObjectProtocol?
 
     public private(set) var currentURL: URL?
+    public private(set) var userVolume: Float = 1.0
+    public private(set) var isDucked: Bool = false
+
     public var isPlaying: Bool {
         return player.timeControlStatus == .playing || player.rate > 0
     }
@@ -31,6 +34,7 @@ public final class MediaPlaybackCore: @unchecked Sendable {
 
         player.replaceCurrentItem(with: item)
         setupLooping(for: item)
+        applyActualVolume()
         AppLogger.shared.info("MediaPlaybackCore: Loaded video asset from \(url.path)")
     }
 
@@ -61,11 +65,25 @@ public final class MediaPlaybackCore: @unchecked Sendable {
     }
 
     public func setVolume(_ volume: Float) {
-        player.volume = max(0.0, min(1.0, volume))
+        self.userVolume = max(0.0, min(1.0, volume))
+        applyActualVolume()
+        AppLogger.shared.debug("MediaPlaybackCore: User volume set to \(self.userVolume)")
+    }
+
+    public func setDucked(_ ducked: Bool) {
+        self.isDucked = ducked
+        applyActualVolume()
+        AppLogger.shared.info("MediaPlaybackCore: Audio ducking set to \(ducked) (Volume = \(player.volume))")
     }
 
     public func setMuted(_ isMuted: Bool) {
         player.isMuted = isMuted
+    }
+
+    private func applyActualVolume() {
+        // Duck volume down to 5% (0.05) when other audio apps are active
+        let actualVolume = isDucked ? (userVolume * 0.05) : userVolume
+        player.volume = actualVolume
     }
 
     private func setupLooping(for item: AVPlayerItem) {

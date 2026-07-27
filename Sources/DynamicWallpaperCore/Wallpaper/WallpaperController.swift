@@ -12,6 +12,11 @@ public final class WallpaperController: @unchecked Sendable {
     public private(set) var activeWallpaperURL: URL?
     public var onWallpaperChanged: ((URL?) -> Void)?
 
+    public var onMuteStateChanged: ((Bool) -> Void)?
+    public var onPlayPauseStateChanged: ((Bool) -> Void)?
+    public var onVolumeChanged: ((Float) -> Void)?
+    public var onAutoPauseConfigChanged: ((Bool) -> Void)?
+
     private init() {
         setupAutoPauseIntegration()
     }
@@ -37,7 +42,7 @@ public final class WallpaperController: @unchecked Sendable {
         let fileManager = FileManager.default
         guard fileManager.fileExists(atPath: url.path) else {
             let err = NSError(domain: "WallpaperController", code: 404, userInfo: [NSLocalizedDescriptionKey: "File does not exist at path: \(url.path)"])
-            AppLogger.shared.error("[CHATTER] FUCK! Target wallpaper file is missing at \(url.path)")
+            AppLogger.shared.error("[CHATTER] Target wallpaper file is missing at \(url.path)")
             completion?(.failure(err))
             return
         }
@@ -104,25 +109,36 @@ public final class WallpaperController: @unchecked Sendable {
         displayManager.updateScreens(with: playbackCore.player)
         playbackCore.play()
         onWallpaperChanged?(url)
+        onPlayPauseStateChanged?(true)
         AppLogger.shared.info("[CHATTER] Successfully attached player to desktop layer. Active URL: \(url.path)")
     }
 
     public func setVolume(_ volume: Float) {
         playbackCore.setVolume(volume)
+        onVolumeChanged?(volume)
         AppLogger.shared.debug("[CHATTER] Volume changed to \(volume)")
     }
 
     public func setMuted(_ isMuted: Bool) {
         playbackCore.setMuted(isMuted)
+        onMuteStateChanged?(isMuted)
         AppLogger.shared.debug("[CHATTER] Mute changed to \(isMuted)")
+    }
+
+    public func setAutoPauseEnabled(_ isEnabled: Bool) {
+        autoPauseEngine.isEnabled = isEnabled
+        onAutoPauseConfigChanged?(isEnabled)
+        AppLogger.shared.info("[CHATTER] AutoPause configuration changed to \(isEnabled)")
     }
 
     public func togglePlayPause() {
         if playbackCore.isPlaying {
             playbackCore.pause()
+            onPlayPauseStateChanged?(false)
             AppLogger.shared.info("[CHATTER] User toggled playback to PAUSE")
         } else {
             playbackCore.play()
+            onPlayPauseStateChanged?(true)
             AppLogger.shared.info("[CHATTER] User toggled playback to PLAY")
         }
     }
