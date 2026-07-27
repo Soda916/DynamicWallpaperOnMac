@@ -1,6 +1,14 @@
 import AppKit
 import AVFoundation
 
+public extension Notification.Name {
+    static let wallpaperMuteStateDidChange = Notification.Name("wallpaperMuteStateDidChange")
+    static let wallpaperPlayPauseStateDidChange = Notification.Name("wallpaperPlayPauseStateDidChange")
+    static let wallpaperAutoPauseConfigDidChange = Notification.Name("wallpaperAutoPauseConfigDidChange")
+    static let wallpaperVolumeDidChange = Notification.Name("wallpaperVolumeDidChange")
+    static let wallpaperAudioDuckingDidChange = Notification.Name("wallpaperAudioDuckingDidChange")
+}
+
 /// Central manager orchestrating media playback, display window layers, package imports, and auto-pause triggers.
 public final class WallpaperController: @unchecked Sendable {
     public static let shared = WallpaperController()
@@ -12,11 +20,6 @@ public final class WallpaperController: @unchecked Sendable {
     public private(set) var activeWallpaperURL: URL?
     public var onWallpaperChanged: ((URL?) -> Void)?
 
-    public var onMuteStateChanged: ((Bool) -> Void)?
-    public var onPlayPauseStateChanged: ((Bool) -> Void)?
-    public var onVolumeChanged: ((Float) -> Void)?
-    public var onAutoPauseConfigChanged: ((Bool) -> Void)?
-
     private init() {
         setupAutoPauseIntegration()
     }
@@ -27,9 +30,11 @@ public final class WallpaperController: @unchecked Sendable {
             if isPaused {
                 AppLogger.shared.info("WallpaperController: Auto-pausing desktop playback")
                 self.playbackCore.pause()
+                NotificationCenter.default.post(name: .wallpaperPlayPauseStateDidChange, object: false)
             } else if self.activeWallpaperURL != nil {
                 AppLogger.shared.info("WallpaperController: Resuming desktop playback")
                 self.playbackCore.play()
+                NotificationCenter.default.post(name: .wallpaperPlayPauseStateDidChange, object: true)
             }
         }
         autoPauseEngine.startMonitoring()
@@ -109,36 +114,42 @@ public final class WallpaperController: @unchecked Sendable {
         displayManager.updateScreens(with: playbackCore.player)
         playbackCore.play()
         onWallpaperChanged?(url)
-        onPlayPauseStateChanged?(true)
+        NotificationCenter.default.post(name: .wallpaperPlayPauseStateDidChange, object: true)
         AppLogger.shared.info("[CHATTER] Successfully attached player to desktop layer. Active URL: \(url.path)")
     }
 
     public func setVolume(_ volume: Float) {
         playbackCore.setVolume(volume)
-        onVolumeChanged?(volume)
+        NotificationCenter.default.post(name: .wallpaperVolumeDidChange, object: volume)
         AppLogger.shared.debug("[CHATTER] Volume changed to \(volume)")
+    }
+
+    public func setAudioDucked(_ isDucked: Bool) {
+        playbackCore.setDucked(isDucked)
+        NotificationCenter.default.post(name: .wallpaperAudioDuckingDidChange, object: isDucked)
+        AppLogger.shared.info("[CHATTER] Audio ducking state changed to \(isDucked)")
     }
 
     public func setMuted(_ isMuted: Bool) {
         playbackCore.setMuted(isMuted)
-        onMuteStateChanged?(isMuted)
+        NotificationCenter.default.post(name: .wallpaperMuteStateDidChange, object: isMuted)
         AppLogger.shared.debug("[CHATTER] Mute changed to \(isMuted)")
     }
 
     public func setAutoPauseEnabled(_ isEnabled: Bool) {
         autoPauseEngine.isEnabled = isEnabled
-        onAutoPauseConfigChanged?(isEnabled)
+        NotificationCenter.default.post(name: .wallpaperAutoPauseConfigDidChange, object: isEnabled)
         AppLogger.shared.info("[CHATTER] AutoPause configuration changed to \(isEnabled)")
     }
 
     public func togglePlayPause() {
         if playbackCore.isPlaying {
             playbackCore.pause()
-            onPlayPauseStateChanged?(false)
+            NotificationCenter.default.post(name: .wallpaperPlayPauseStateDidChange, object: false)
             AppLogger.shared.info("[CHATTER] User toggled playback to PAUSE")
         } else {
             playbackCore.play()
-            onPlayPauseStateChanged?(true)
+            NotificationCenter.default.post(name: .wallpaperPlayPauseStateDidChange, object: true)
             AppLogger.shared.info("[CHATTER] User toggled playback to PLAY")
         }
     }

@@ -11,6 +11,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var togglePlayPauseMenuItem: NSMenuItem?
     private var toggleMuteMenuItem: NSMenuItem?
     private var autoPauseMenuItem: NSMenuItem?
+    private var audioDuckingMenuItem: NSMenuItem?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         AppLogger.shared.info("[CHATTER] Application launch initiated. Loading system settings...")
@@ -36,7 +37,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         if let button = statusItem?.button {
             let iconImage = NSImage(systemSymbolName: "desktopcomputer", accessibilityDescription: "Dynamic Wallpaper Engine")
-            // Native Template Icon Tinting (Item 5)
             iconImage?.isTemplate = true
             button.image = iconImage
             button.action = #selector(statusItemClicked)
@@ -53,6 +53,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let muteItem = NSMenuItem(title: "Mute Sound", action: #selector(toggleMute), keyEquivalent: "m")
         toggleMuteMenuItem = muteItem
         menu.addItem(muteItem)
+
+        let duckingItem = NSMenuItem(title: "Audio Ducking (5% Volume)", action: #selector(toggleAudioDucking), keyEquivalent: "d")
+        duckingItem.state = .off
+        audioDuckingMenuItem = duckingItem
+        menu.addItem(duckingItem)
         
         let autoPauseItem = NSMenuItem(title: "Auto-Pause on Fullscreen", action: #selector(toggleAutoPause), keyEquivalent: "a")
         autoPauseItem.state = config.autoPauseOnFullscreen ? .on : .off
@@ -69,24 +74,30 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func setupGlobalStateObservers() {
-        // Bi-directional Menu Bar state synchronization (Item 3)
-        WallpaperController.shared.onMuteStateChanged = { [weak self] isMuted in
-            DispatchQueue.main.async {
+        let center = NotificationCenter.default
+        center.addObserver(forName: .wallpaperMuteStateDidChange, object: nil, queue: .main) { [weak self] notif in
+            if let isMuted = notif.object as? Bool {
                 self?.config.isMuted = isMuted
                 self?.toggleMuteMenuItem?.title = isMuted ? "Unmute Sound" : "Mute Sound"
             }
         }
 
-        WallpaperController.shared.onPlayPauseStateChanged = { [weak self] isPlaying in
-            DispatchQueue.main.async {
+        center.addObserver(forName: .wallpaperPlayPauseStateDidChange, object: nil, queue: .main) { [weak self] notif in
+            if let isPlaying = notif.object as? Bool {
                 self?.togglePlayPauseMenuItem?.title = isPlaying ? "Pause Playback" : "Resume Playback"
             }
         }
 
-        WallpaperController.shared.onAutoPauseConfigChanged = { [weak self] isEnabled in
-            DispatchQueue.main.async {
+        center.addObserver(forName: .wallpaperAutoPauseConfigDidChange, object: nil, queue: .main) { [weak self] notif in
+            if let isEnabled = notif.object as? Bool {
                 self?.config.autoPauseOnFullscreen = isEnabled
                 self?.autoPauseMenuItem?.state = isEnabled ? .on : .off
+            }
+        }
+
+        center.addObserver(forName: .wallpaperAudioDuckingDidChange, object: nil, queue: .main) { [weak self] notif in
+            if let isDucked = notif.object as? Bool {
+                self?.audioDuckingMenuItem?.state = isDucked ? .on : .off
             }
         }
     }
@@ -96,11 +107,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func chooseWallpaper() {
+        if dashboardController == nil {
+            dashboardController = DashboardWindowController()
+        }
         dashboardController?.importWallpaper()
     }
 
     @objc private func togglePlayPause() {
         WallpaperController.shared.togglePlayPause()
+    }
+
+    @objc private func toggleMute() {
+        let newState = !config.isMuted
+        WallpaperController.shared.setMuted(newState)
+    }
+
+    @objc private func toggleAudioDucking() {
+        let isCurrentlyDucked = WallpaperController.shared.playbackCore.isDucked
+        WallpaperController.shared.setAudioDucked(!isCurrentlyDucked)
     }
 
     @objc private func toggleAutoPause() {
@@ -116,11 +140,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         dashboardController?.window?.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
         AppLogger.shared.info("[CHATTER] Opened Dashboard Window Controller")
-    }
-
-    @objc private func toggleMute() {
-        let newState = !config.isMuted
-        WallpaperController.shared.setMuted(newState)
     }
 
     @objc private func quitApp() {
@@ -175,6 +194,7 @@ final class DashboardWindowController: NSWindowController {
     private let playPauseButton = NSButton(title: "Pause", target: nil, action: nil)
     private let muteButton = NSButton(title: "Mute", target: nil, action: nil)
     private let autoPauseCheckbox = NSButton(checkboxWithTitle: "Enable Auto-Pause on Fullscreen / Maximize", target: nil, action: nil)
+    private let audioDuckingCheckbox = NSButton(checkboxWithTitle: "Audio Ducking (5% Volume)", target: nil, action: nil)
 
     private let volumeSlider = NSSlider(value: 1.0, minValue: 0.0, maxValue: 1.0, target: nil, action: nil)
     private let volumeLabel = NSTextField(labelWithString: "Volume: 100%")
@@ -186,7 +206,7 @@ final class DashboardWindowController: NSWindowController {
 
     init() {
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 900, height: 620),
+            contentRect: NSRect(x: 0, y: 0, width: 920, height: 640),
             styleMask: [.titled, .closable, .miniaturizable, .resizable],
             backing: .buffered,
             defer: false
@@ -220,7 +240,7 @@ final class DashboardWindowController: NSWindowController {
         statusBadge.font = NSFont.boldSystemFont(ofSize: 11)
         statusBadge.textColor = .systemGreen
 
-        // Header Stack
+        // Clean Header Stack (removed any stray title labels)
         let headerTextStack = NSStackView(views: [titleLabel, subtitleLabel])
         headerTextStack.orientation = .vertical
         headerTextStack.alignment = .leading
@@ -231,7 +251,7 @@ final class DashboardWindowController: NSWindowController {
         headerStack.alignment = .centerY
         headerStack.distribution = .equalSpacing
 
-        // Raw Live Preview Player Setup
+        // Raw Live Preview Player Setup with crisp 16:9 Landscape aspect ratio
         rawPlayerView.setPlayer(WallpaperController.shared.playbackCore.player)
 
         fileNameLabel.font = NSFont.boldSystemFont(ofSize: 13)
@@ -245,7 +265,7 @@ final class DashboardWindowController: NSWindowController {
         let previewInfoStack = NSStackView(views: [rawPlayerView, fileNameLabel, filePathLabel])
         previewInfoStack.orientation = .vertical
         previewInfoStack.alignment = .centerX
-        previewInfoStack.spacing = 6
+        previewInfoStack.spacing = 8
 
         importButton.bezelStyle = .rounded
         importButton.controlSize = .large
@@ -253,10 +273,16 @@ final class DashboardWindowController: NSWindowController {
         playPauseButton.bezelStyle = .rounded
         muteButton.bezelStyle = .rounded
         autoPauseCheckbox.state = AutoPauseEngine.shared.isEnabled ? .on : .off
+        audioDuckingCheckbox.state = WallpaperController.shared.playbackCore.isDucked ? .on : .off
 
         let mediaControlStack = NSStackView(views: [playPauseButton, muteButton])
         mediaControlStack.orientation = .horizontal
         mediaControlStack.spacing = 12
+
+        let checkboxesStack = NSStackView(views: [autoPauseCheckbox, audioDuckingCheckbox])
+        checkboxesStack.orientation = .vertical
+        checkboxesStack.alignment = .leading
+        checkboxesStack.spacing = 6
 
         volumeLabel.font = NSFont.systemFont(ofSize: 12)
         volumeLabel.textColor = .secondaryLabelColor
@@ -290,11 +316,14 @@ final class DashboardWindowController: NSWindowController {
             appendConsoleLog(log)
         }
 
+        let controlsHeading = NSTextField(labelWithString: "Playback Controls")
+        controlsHeading.font = NSFont.boldSystemFont(ofSize: 12)
+
         // Right Controls Stack
         let rightStack = NSStackView(views: [
-            NSTextField(labelWithString: "Playback Controls"),
+            controlsHeading,
             mediaControlStack,
-            autoPauseCheckbox,
+            checkboxesStack,
             volumeLabel,
             volumeSlider,
             footerStatusLabel,
@@ -308,11 +337,12 @@ final class DashboardWindowController: NSWindowController {
         let leftStack = NSStackView(views: [previewInfoStack, importButton])
         leftStack.orientation = .vertical
         leftStack.spacing = 12
+        leftStack.alignment = .centerX
 
         let mainContentStack = NSStackView(views: [leftStack, rightStack])
         mainContentStack.orientation = .horizontal
-        mainContentStack.spacing = 20
-        mainContentStack.distribution = .fillEqually
+        mainContentStack.spacing = 24
+        mainContentStack.distribution = .fill
 
         let rootStack = NSStackView(views: [headerStack, NSBox(), mainContentStack])
         rootStack.orientation = .vertical
@@ -326,7 +356,11 @@ final class DashboardWindowController: NSWindowController {
             rootStack.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -16),
             rootStack.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
             rootStack.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
-            rawPlayerView.heightAnchor.constraint(equalToConstant: 220),
+
+            // Fixed 16:9 Landscape Video Aspect Ratio (380x213.75) (Item 7)
+            rawPlayerView.widthAnchor.constraint(equalToConstant: 380),
+            rawPlayerView.heightAnchor.constraint(equalToConstant: 213.75),
+
             consoleScrollView.heightAnchor.constraint(equalToConstant: 160),
             consoleScrollView.widthAnchor.constraint(equalTo: rightStack.widthAnchor)
         ])
@@ -344,6 +378,9 @@ final class DashboardWindowController: NSWindowController {
 
         autoPauseCheckbox.target = self
         autoPauseCheckbox.action = #selector(autoPauseToggled)
+
+        audioDuckingCheckbox.target = self
+        audioDuckingCheckbox.action = #selector(audioDuckingToggled)
 
         volumeSlider.target = self
         volumeSlider.action = #selector(volumeSliderChanged)
@@ -376,30 +413,38 @@ final class DashboardWindowController: NSWindowController {
             }
         }
 
-        // Bi-directional UI State Sync & Mute-disabled Volume Slider (Items 3 & 4)
-        WallpaperController.shared.onMuteStateChanged = { [weak self] isMuted in
-            DispatchQueue.main.async {
+        // NotificationCenter Observer for Multi-Observer 100% State Sync (Item 3 & 4)
+        let center = NotificationCenter.default
+
+        center.addObserver(forName: .wallpaperMuteStateDidChange, object: nil, queue: .main) { [weak self] notif in
+            if let isMuted = notif.object as? Bool {
                 self?.muteButton.title = isMuted ? "Unmute" : "Mute"
                 self?.volumeSlider.isEnabled = !isMuted
             }
         }
 
-        WallpaperController.shared.onPlayPauseStateChanged = { [weak self] isPlaying in
-            DispatchQueue.main.async {
+        center.addObserver(forName: .wallpaperPlayPauseStateDidChange, object: nil, queue: .main) { [weak self] notif in
+            if let isPlaying = notif.object as? Bool {
                 self?.playPauseButton.title = isPlaying ? "Pause" : "Play"
             }
         }
 
-        WallpaperController.shared.onVolumeChanged = { [weak self] vol in
-            DispatchQueue.main.async {
+        center.addObserver(forName: .wallpaperVolumeDidChange, object: nil, queue: .main) { [weak self] notif in
+            if let vol = notif.object as? Float {
                 self?.volumeSlider.floatValue = vol
                 self?.volumeLabel.stringValue = "Volume: \(Int(vol * 100))%"
             }
         }
 
-        WallpaperController.shared.onAutoPauseConfigChanged = { [weak self] isEnabled in
-            DispatchQueue.main.async {
+        center.addObserver(forName: .wallpaperAutoPauseConfigDidChange, object: nil, queue: .main) { [weak self] notif in
+            if let isEnabled = notif.object as? Bool {
                 self?.autoPauseCheckbox.state = isEnabled ? .on : .off
+            }
+        }
+
+        center.addObserver(forName: .wallpaperAudioDuckingDidChange, object: nil, queue: .main) { [weak self] notif in
+            if let isDucked = notif.object as? Bool {
+                self?.audioDuckingCheckbox.state = isDucked ? .on : .off
             }
         }
     }
@@ -473,6 +518,11 @@ final class DashboardWindowController: NSWindowController {
     @objc private func autoPauseToggled() {
         let isEnabled = (autoPauseCheckbox.state == .on)
         WallpaperController.shared.setAutoPauseEnabled(isEnabled)
+    }
+
+    @objc private func audioDuckingToggled() {
+        let isDucked = (audioDuckingCheckbox.state == .on)
+        WallpaperController.shared.setAudioDucked(isDucked)
     }
 
     @objc private func volumeSliderChanged() {
