@@ -84,6 +84,11 @@ chmod +x scripts/build_app.sh
 # 產生的 .dmg 與 .zip 檔案將位於 build/ 目錄中。
 ```
 
+### 系統架構版本 (Architectural Variants)
+- **Universal** (最高相容性，適合所有 Mac)
+- **Apple Silicon (arm64)** (適配 M1/M2/M3/M4，檔案最小)
+- **Intel (x86_64)** (適配 Intel Mac)
+
 ---
 
 ## 📄 授權與社群

@@ -8,11 +8,6 @@ echo "Starting build process for Dynamic Wallpaper Engine..."
 # Directories
 PROJECT_DIR="/Users/dustlee/program/DynamicWallPaper"
 BUILD_DIR="$PROJECT_DIR/build"
-APP_DIR="$BUILD_DIR/DynamicWallpaperEngine.app"
-CONTENTS_DIR="$APP_DIR/Contents"
-MACOS_DIR="$CONTENTS_DIR/MacOS"
-RESOURCES_DIR="$CONTENTS_DIR/Resources"
-FRAMEWORKS_DIR="$CONTENTS_DIR/Frameworks"
 VERSION="0.1.0-alpha"
 
 # Ensure script is run from project root or directories are created correctly
@@ -22,45 +17,77 @@ mkdir -p "$PROJECT_DIR/scripts"
 echo "Cleaning build directory..."
 rm -rf "$BUILD_DIR"
 mkdir -p "$BUILD_DIR"
-mkdir -p "$MACOS_DIR"
-mkdir -p "$RESOURCES_DIR"
-mkdir -p "$FRAMEWORKS_DIR"
 
-# Compile Core
-echo "Compiling DynamicWallpaperCore as dynamic library..."
 CORE_SOURCES=$(find "$PROJECT_DIR/Sources/DynamicWallpaperCore" -name "*.swift")
-swiftc -emit-library \
-    -target arm64-apple-macosx14.0 \
-    -module-name DynamicWallpaperCore \
-    -emit-module -emit-module-path "$BUILD_DIR/DynamicWallpaperCore.swiftmodule" \
-    $CORE_SOURCES \
-    -o "$BUILD_DIR/libDynamicWallpaperCore.dylib"
-
-# Set library id so it's recorded correctly during link
-install_name_tool -id "@rpath/libDynamicWallpaperCore.dylib" "$BUILD_DIR/libDynamicWallpaperCore.dylib"
-
-# Compile Engine
-echo "Compiling DynamicWallpaperEngine..."
 ENGINE_SOURCES=$(find "$PROJECT_DIR/Sources/DynamicWallpaperEngine" -name "*.swift")
-swiftc \
-    -target arm64-apple-macosx14.0 \
-    -I "$BUILD_DIR" \
-    -L "$BUILD_DIR" -lDynamicWallpaperCore \
-    $ENGINE_SOURCES \
-    -o "$BUILD_DIR/DynamicWallpaperEngine"
 
-# Add rpath to executable so it can find the library
-install_name_tool -add_rpath "@executable_path/../Frameworks" "$BUILD_DIR/DynamicWallpaperEngine"
+# Helper function to compile for an architecture
+compile_arch() {
+    local arch=$1
+    echo "Compiling for $arch..."
+    
+    local ARCH_DIR="$BUILD_DIR/$arch"
+    mkdir -p "$ARCH_DIR"
+    
+    # Compile Core
+    swiftc -emit-library \
+        -target ${arch}-apple-macosx14.0 \
+        -module-name DynamicWallpaperCore \
+        -emit-module -emit-module-path "$ARCH_DIR/DynamicWallpaperCore.swiftmodule" \
+        $CORE_SOURCES \
+        -o "$ARCH_DIR/libDynamicWallpaperCore.dylib"
 
-# Assemble .app
-echo "Assembling .app bundle..."
-cp "$BUILD_DIR/DynamicWallpaperEngine" "$MACOS_DIR/"
-cp "$BUILD_DIR/libDynamicWallpaperCore.dylib" "$FRAMEWORKS_DIR/"
-cp "$PROJECT_DIR/AppIcon.icns" "$RESOURCES_DIR/AppIcon.icns"
+    install_name_tool -id "@rpath/libDynamicWallpaperCore.dylib" "$ARCH_DIR/libDynamicWallpaperCore.dylib"
 
-# Generate Info.plist
-echo "Generating Info.plist..."
-cat > "$CONTENTS_DIR/Info.plist" <<EOF
+    # Compile Engine
+    swiftc \
+        -target ${arch}-apple-macosx14.0 \
+        -I "$ARCH_DIR" \
+        -L "$ARCH_DIR" -lDynamicWallpaperCore \
+        $ENGINE_SOURCES \
+        -o "$ARCH_DIR/DynamicWallpaperEngine"
+}
+
+compile_arch "arm64"
+compile_arch "x86_64"
+
+# Combine using lipo
+echo "Creating Universal 2 binaries..."
+UNIVERSAL_DIR="$BUILD_DIR/universal"
+mkdir -p "$UNIVERSAL_DIR"
+
+lipo -create "$BUILD_DIR/arm64/libDynamicWallpaperCore.dylib" "$BUILD_DIR/x86_64/libDynamicWallpaperCore.dylib" -output "$UNIVERSAL_DIR/libDynamicWallpaperCore.dylib"
+lipo -create "$BUILD_DIR/arm64/DynamicWallpaperEngine" "$BUILD_DIR/x86_64/DynamicWallpaperEngine" -output "$UNIVERSAL_DIR/DynamicWallpaperEngine"
+
+
+# Helper function to package
+package_variant() {
+    local variant_name=$1
+    local bin_dir=$2
+    
+    echo "Packaging variant: $variant_name"
+    
+    local STAGING_DIR="$BUILD_DIR/staging_$variant_name"
+    local APP_DIR="$STAGING_DIR/DynamicWallpaperEngine.app"
+    local CONTENTS_DIR="$APP_DIR/Contents"
+    local MACOS_DIR="$CONTENTS_DIR/MacOS"
+    local RESOURCES_DIR="$CONTENTS_DIR/Resources"
+    local FRAMEWORKS_DIR="$CONTENTS_DIR/Frameworks"
+
+    mkdir -p "$MACOS_DIR"
+    mkdir -p "$RESOURCES_DIR"
+    mkdir -p "$FRAMEWORKS_DIR"
+
+    cp "$bin_dir/DynamicWallpaperEngine" "$MACOS_DIR/DynamicWallpaperEngine"
+    cp "$bin_dir/libDynamicWallpaperCore.dylib" "$FRAMEWORKS_DIR/libDynamicWallpaperCore.dylib"
+    if [ -f "$PROJECT_DIR/AppIcon.icns" ]; then
+        cp "$PROJECT_DIR/AppIcon.icns" "$RESOURCES_DIR/AppIcon.icns"
+    fi
+    
+    install_name_tool -add_rpath "@executable_path/../Frameworks" "$MACOS_DIR/DynamicWallpaperEngine"
+
+    # Generate Info.plist
+    cat > "$CONTENTS_DIR/Info.plist" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -91,24 +118,25 @@ cat > "$CONTENTS_DIR/Info.plist" <<EOF
 </plist>
 EOF
 
-# Zip release
-echo "Creating release archive..."
-cd "$BUILD_DIR"
-ZIP_NAME="DynamicWallpaperEngine-v$VERSION-macOS-arm64.zip"
-zip -r "$ZIP_NAME" "DynamicWallpaperEngine.app"
+    # Zip
+    cd "$STAGING_DIR"
+    local ZIP_NAME="DynamicWallpaperEngine-v${VERSION}-macOS-${variant_name}.zip"
+    zip -r "$BUILD_DIR/$ZIP_NAME" "DynamicWallpaperEngine.app" > /dev/null
 
-# Generate DMG
-echo "Generating DMG image..."
-cd "$PROJECT_DIR"
-DMG_STAGING="$BUILD_DIR/dmg_staging"
-mkdir -p "$DMG_STAGING"
-cp -R "$APP_DIR" "$DMG_STAGING/"
-ln -s /Applications "$DMG_STAGING/Applications"
-DMG_NAME="DynamicWallpaperEngine-v${VERSION}-macOS-arm64.dmg"
-rm -f "$BUILD_DIR/${DMG_NAME}"
-hdiutil create -volname "Dynamic Wallpaper Engine" -srcfolder "$DMG_STAGING" -ov -format UDZO "$BUILD_DIR/${DMG_NAME}"
-rm -rf "$DMG_STAGING"
+    # DMG
+    local DMG_STAGING="$STAGING_DIR/dmg_staging"
+    mkdir -p "$DMG_STAGING"
+    cp -R "$APP_DIR" "$DMG_STAGING/"
+    ln -s /Applications "$DMG_STAGING/Applications"
+    local DMG_NAME="DynamicWallpaperEngine-v${VERSION}-macOS-${variant_name}.dmg"
+    rm -f "$BUILD_DIR/$DMG_NAME"
+    hdiutil create -volname "Dynamic Wallpaper Engine" -srcfolder "$DMG_STAGING" -ov -format UDZO "$BUILD_DIR/$DMG_NAME" > /dev/null
+    
+    echo "Generated $ZIP_NAME and $DMG_NAME"
+}
+
+package_variant "arm64" "$BUILD_DIR/arm64"
+package_variant "x86_64" "$BUILD_DIR/x86_64"
+package_variant "Universal" "$BUILD_DIR/universal"
 
 echo "Build successful!"
-echo "Archive created at: $BUILD_DIR/$ZIP_NAME"
-echo "DMG image created at: $BUILD_DIR/$DMG_NAME"

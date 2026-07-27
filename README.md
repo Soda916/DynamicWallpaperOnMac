@@ -84,6 +84,11 @@ chmod +x scripts/build_app.sh
 # The generated .dmg and .zip files will be available in the build/ directory.
 ```
 
+### Architectural Variants
+- **Universal** (最高相容性，適合所有 Mac)
+- **Apple Silicon (arm64)** (適配 M1/M2/M3/M4，檔案最小)
+- **Intel (x86_64)** (適配 Intel Mac)
+
 ---
 
 ## 📄 License & Community
