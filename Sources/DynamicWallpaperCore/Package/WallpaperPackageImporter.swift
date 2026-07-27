@@ -2,7 +2,7 @@ import Foundation
 import ImageIO
 import AVFoundation
 
-/// Handles import, validation, and GIF-to-HEVC video cache conversion for `.wallpaper` packages.
+/// Handles import, validation, codec inspection, and automatic transcoding for unsupported formats (GIF, AV1, VP9).
 public final class WallpaperPackageImporter {
     public static let shared = WallpaperPackageImporter()
 
@@ -27,6 +27,86 @@ public final class WallpaperPackageImporter {
         }
 
         return metadata
+    }
+
+    /// Inspects video codec to check if native VideoToolbox hardware decoding is supported or if transcoding is required.
+    public func inspectVideoCodec(url: URL, completion: @escaping (Bool, String) -> Void) {
+        let asset = AVURLAsset(url: url)
+        Task {
+            do {
+                let tracks = try await asset.load(.tracks)
+                guard let videoTrack = tracks.first(where: { $0.mediaType == .video }) else {
+                    completion(false, "No video track found")
+                    return
+                }
+
+                let formatDescriptions = try await videoTrack.load(.formatDescriptions)
+                guard let firstDesc = formatDescriptions.first else {
+                    completion(true, "Unknown format")
+                    return
+                }
+
+                let subType = CMFormatDescriptionGetMediaSubType(firstDesc)
+                let subTypeString = FourCharCodeToString(subType)
+
+                AppLogger.shared.info("WallpaperPackageImporter: Inspected video codec subtype: '\(subTypeString)' for \(url.lastPathComponent)")
+
+                // AV1 (av01) and VP9 (vp09 / vp9) require transcoding to HEVC if VideoToolbox hardware path is absent
+                if subTypeString == "av01" || subTypeString == "vp09" || subTypeString == "vp08" {
+                    completion(false, subTypeString)
+                } else {
+                    completion(true, subTypeString)
+                }
+            } catch {
+                AppLogger.shared.error("WallpaperPackageImporter: Failed to inspect video codec: \(error.localizedDescription)")
+                completion(true, "Unknown")
+            }
+        }
+    }
+
+    /// Transcodes unsupported video format (e.g. AV1) to hardware-accelerated HEVC MP4 cache via system FFmpeg.
+    public func transcodeVideoToHEVC(inputURL: URL, outputVideoURL: URL, completion: @escaping (Result<URL, Error>) -> Void) {
+        let ffmpegPaths = ["/opt/homebrew/bin/ffmpeg", "/usr/local/bin/ffmpeg", "/usr/bin/ffmpeg"]
+        guard let ffmpegPath = ffmpegPaths.first(where: { fileManager.fileExists(atPath: $0) }) else {
+            AppLogger.shared.error("WallpaperPackageImporter: FFmpeg binary not found in standard paths")
+            completion(.failure(NSError(domain: "WallpaperPackageImporter", code: 404, userInfo: [NSLocalizedDescriptionKey: "FFmpeg binary not found. Please install ffmpeg via Homebrew."])))
+            return
+        }
+
+        try? fileManager.removeItem(at: outputVideoURL)
+
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: ffmpegPath)
+        process.arguments = [
+            "-y",
+            "-i", inputURL.path,
+            "-c:v", "hevc_videotoolbox",
+            "-b:v", "2M",
+            "-c:a", "copy",
+            outputVideoURL.path
+        ]
+
+        let pipe = Pipe()
+        process.standardError = pipe
+
+        AppLogger.shared.info("WallpaperPackageImporter: Launching FFmpeg HEVC VideoToolbox transcoding for \(inputURL.lastPathComponent)...")
+
+        do {
+            try process.run()
+            process.waitUntilExit()
+
+            if process.terminationStatus == 0 && fileManager.fileExists(atPath: outputVideoURL.path) {
+                AppLogger.shared.info("WallpaperPackageImporter: FFmpeg transcoding complete: \(outputVideoURL.path)")
+                completion(.success(outputVideoURL))
+            } else {
+                let data = pipe.fileHandleForReading.readDataToEndOfFile()
+                let errorOutput = String(data: data, encoding: .utf8) ?? "Unknown error"
+                AppLogger.shared.error("WallpaperPackageImporter: FFmpeg failed: \(errorOutput)")
+                completion(.failure(NSError(domain: "WallpaperPackageImporter", code: 500, userInfo: [NSLocalizedDescriptionKey: "FFmpeg transcoding failed: \(errorOutput)"])))
+            }
+        } catch {
+            completion(.failure(error))
+        }
     }
 
     /// Automatically converts GIF image to hardware-accelerated HEVC MP4 video cache upon first import.
@@ -74,7 +154,7 @@ public final class WallpaperPackageImporter {
             writer.startSession(atSourceTime: .zero)
 
             var frameTime = CMTime.zero
-            let frameDuration = CMTime(value: 1, timescale: 30) // Default 30 FPS for converted GIF
+            let frameDuration = CMTime(value: 1, timescale: 30)
 
             for i in 0..<count {
                 if let cgImage = CGImageSourceCreateImageAtIndex(imageSource, i, nil) {
@@ -100,6 +180,17 @@ public final class WallpaperPackageImporter {
         } catch {
             completion(.failure(error))
         }
+    }
+
+    private func FourCharCodeToString(_ code: FourCharCode) -> String {
+        let bytes: [CChar] = [
+            CChar((code >> 24) & 0xff),
+            CChar((code >> 16) & 0xff),
+            CChar((code >> 8) & 0xff),
+            CChar(code & 0xff),
+            0
+        ]
+        return String(cString: bytes)
     }
 
     private func pixelBufferFromCGImage(cgImage: CGImage, width: Int, height: Int) -> CVPixelBuffer? {

@@ -1,4 +1,5 @@
 import AppKit
+import AVKit
 import AVFoundation
 import DynamicWallpaperCore
 
@@ -9,17 +10,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var autoPauseMenuItem: NSMenuItem?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        AppLogger.shared.info("DynamicWallpaperEngine starting up...")
+        AppLogger.shared.info("[CHATTER] Application launch initiated. Loading system settings...")
 
         // Configure Dock icon visibility according to user preference (Default: hidden Menu Bar App)
         if config.hideDockIcon {
             NSApp.setActivationPolicy(.accessory)
+            AppLogger.shared.info("[CHATTER] Dock Icon hidden as per user configuration (Menu Bar App mode)")
         } else {
             NSApp.setActivationPolicy(.regular)
+            AppLogger.shared.info("[CHATTER] Dock Icon enabled as per user configuration")
         }
 
         // Apply initial config to AutoPauseEngine
         AutoPauseEngine.shared.isEnabled = config.autoPauseOnFullscreen
+        AppLogger.shared.info("[CHATTER] AutoPauseEngine initial state: \(config.autoPauseOnFullscreen)")
 
         setupStatusMenu()
     }
@@ -48,6 +52,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(NSMenuItem(title: "Quit DynamicWallpaperEngine", action: #selector(quitApp), keyEquivalent: "q"))
 
         statusItem?.menu = menu
+        AppLogger.shared.info("[CHATTER] System Status Menu initialized successfully")
     }
 
     @objc private func statusItemClicked() {
@@ -68,7 +73,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         AutoPauseEngine.shared.isEnabled = isEnabled
         autoPauseMenuItem?.state = isEnabled ? .on : .off
         dashboardController?.updateAutoPauseUI(isEnabled: isEnabled)
-        AppLogger.shared.info("AutoPause toggled via menu item: \(isEnabled)")
+        AppLogger.shared.info("[CHATTER] AutoPause toggled via Menu Bar item to: \(isEnabled)")
     }
 
     @objc private func openDashboard() {
@@ -78,32 +83,32 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         dashboardController?.showWindow(nil)
         dashboardController?.window?.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
+        AppLogger.shared.info("[CHATTER] Opened Dashboard Window Controller")
     }
 
     @objc private func toggleMute() {
         config.isMuted.toggle()
         WallpaperController.shared.setMuted(config.isMuted)
-        AppLogger.shared.info("Mute state toggled to: \(config.isMuted)")
+        AppLogger.shared.info("[CHATTER] Mute state toggled to: \(config.isMuted)")
     }
 
     @objc private func quitApp() {
-        AppLogger.shared.info("Application quitting via Menu Bar...")
+        AppLogger.shared.info("[CHATTER] Quitting application via Menu Bar...")
         NSApp.terminate(nil)
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
-        // Keep app running in Menu Bar when GUI window is closed
         return false
     }
 }
 
-/// AppKit Dashboard Window Controller providing zero-macro, native high-performance controls.
+/// AppKit Dashboard Window Controller providing live video stream preview and real-time console chatter logging.
 final class DashboardWindowController: NSWindowController {
     private let titleLabel = NSTextField(labelWithString: "Dynamic Wallpaper Engine")
-    private let subtitleLabel = NSTextField(labelWithString: "macOS Native, Extreme Low Resource, Open Source Dynamic Wallpaper Runtime")
+    private let subtitleLabel = NSTextField(labelWithString: "macOS Native Live Stream Monitor & Real-Time Console Logs")
     private let statusBadge = NSTextField(labelWithString: "Active Playback")
 
-    private let previewBox = NSBox()
+    private let playerView = AVPlayerView()
     private let fileNameLabel = NSTextField(labelWithString: "No Wallpaper Selected")
     private let filePathLabel = NSTextField(labelWithString: "Click below to import MP4, MOV, WEBM or GIF")
 
@@ -116,14 +121,18 @@ final class DashboardWindowController: NSWindowController {
     private let volumeLabel = NSTextField(labelWithString: "Volume: 100%")
     private let footerStatusLabel = NSTextField(labelWithString: "Status: Ready")
 
+    private let consoleTextView = NSTextView()
+    private let consoleScrollView = NSScrollView()
+    private var chatterTimer: Timer?
+
     init() {
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 750, height: 500),
+            contentRect: NSRect(x: 0, y: 0, width: 900, height: 620),
             styleMask: [.titled, .closable, .miniaturizable, .resizable],
             backing: .buffered,
             defer: false
         )
-        window.title = "Dynamic Wallpaper Engine Dashboard"
+        window.title = "Dynamic Wallpaper Engine Live Monitor"
         window.center()
         window.isReleasedWhenClosed = false
         super.init(window: window)
@@ -131,10 +140,15 @@ final class DashboardWindowController: NSWindowController {
         setupUI()
         setupActions()
         observeControllerState()
+        startChatterTimer()
     }
 
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
+    }
+
+    deinit {
+        chatterTimer?.invalidate()
     }
 
     private func setupUI() {
@@ -158,33 +172,26 @@ final class DashboardWindowController: NSWindowController {
         headerStack.alignment = .centerY
         headerStack.distribution = .equalSpacing
 
-        // Preview Box Layout
-        previewBox.boxType = .custom
-        previewBox.fillColor = NSColor.black
-        previewBox.borderColor = NSColor.separatorColor
-        previewBox.cornerRadius = 10
+        // Live Preview Player View Setup
+        playerView.player = WallpaperController.shared.playbackCore.player
+        playerView.controlsStyle = .inline
+        playerView.showsFrameSteppingButtons = false
+        playerView.wantsLayer = true
+        playerView.layer?.cornerRadius = 8
+        playerView.layer?.masksToBounds = true
 
-        fileNameLabel.font = NSFont.boldSystemFont(ofSize: 15)
-        fileNameLabel.textColor = .white
+        fileNameLabel.font = NSFont.boldSystemFont(ofSize: 13)
+        fileNameLabel.textColor = .labelColor
         fileNameLabel.alignment = .center
 
-        filePathLabel.font = NSFont.systemFont(ofSize: 11)
-        filePathLabel.textColor = .lightGray
+        filePathLabel.font = NSFont.systemFont(ofSize: 10)
+        filePathLabel.textColor = .secondaryLabelColor
         filePathLabel.alignment = .center
 
-        let previewStack = NSStackView(views: [fileNameLabel, filePathLabel])
-        previewStack.orientation = .vertical
-        previewStack.alignment = .centerX
-        previewStack.spacing = 6
-        previewStack.translatesAutoresizingMaskIntoConstraints = false
-
-        previewBox.addSubview(previewStack)
-        NSLayoutConstraint.activate([
-            previewStack.centerXAnchor.constraint(equalTo: previewBox.centerXAnchor),
-            previewStack.centerYAnchor.constraint(equalTo: previewBox.centerYAnchor),
-            previewStack.leadingAnchor.constraint(greaterThanOrEqualTo: previewBox.leadingAnchor, constant: 16),
-            previewStack.trailingAnchor.constraint(lessThanOrEqualTo: previewBox.trailingAnchor, constant: -16)
-        ])
+        let previewInfoStack = NSStackView(views: [playerView, fileNameLabel, filePathLabel])
+        previewInfoStack.orientation = .vertical
+        previewInfoStack.alignment = .centerX
+        previewInfoStack.spacing = 6
 
         importButton.bezelStyle = .rounded
         importButton.controlSize = .large
@@ -203,6 +210,32 @@ final class DashboardWindowController: NSWindowController {
         footerStatusLabel.font = NSFont.systemFont(ofSize: 11)
         footerStatusLabel.textColor = .tertiaryLabelColor
 
+        // Console Log View Setup
+        consoleTextView.isEditable = false
+        consoleTextView.font = NSFont.userFixedPitchFont(ofSize: 10)
+        consoleTextView.backgroundColor = NSColor.black
+        consoleTextView.textColor = NSColor.systemGreen
+        consoleTextView.autoresizingMask = [.width, .height]
+
+        consoleScrollView.documentView = consoleTextView
+        consoleScrollView.hasVerticalScroller = true
+        consoleScrollView.borderType = .bezelBorder
+        consoleScrollView.wantsLayer = true
+        consoleScrollView.layer?.cornerRadius = 6
+
+        let consoleTitleLabel = NSTextField(labelWithString: "Real-Time Console Chatter & Logs:")
+        consoleTitleLabel.font = NSFont.boldSystemFont(ofSize: 11)
+
+        let consoleStack = NSStackView(views: [consoleTitleLabel, consoleScrollView])
+        consoleStack.orientation = .vertical
+        consoleStack.alignment = .leading
+        consoleStack.spacing = 4
+
+        // Populate initial logs
+        for log in AppLogger.shared.recentLogs {
+            appendConsoleLog(log)
+        }
+
         // Right Controls Stack
         let rightStack = NSStackView(views: [
             NSTextField(labelWithString: "Playback Controls"),
@@ -210,35 +243,38 @@ final class DashboardWindowController: NSWindowController {
             autoPauseCheckbox,
             volumeLabel,
             volumeSlider,
-            footerStatusLabel
+            footerStatusLabel,
+            consoleStack
         ])
         rightStack.orientation = .vertical
         rightStack.alignment = .leading
-        rightStack.spacing = 14
+        rightStack.spacing = 10
 
         // Main Split Content
-        let leftStack = NSStackView(views: [previewBox, importButton])
+        let leftStack = NSStackView(views: [previewInfoStack, importButton])
         leftStack.orientation = .vertical
         leftStack.spacing = 12
 
         let mainContentStack = NSStackView(views: [leftStack, rightStack])
         mainContentStack.orientation = .horizontal
-        mainContentStack.spacing = 24
+        mainContentStack.spacing = 20
         mainContentStack.distribution = .fillEqually
 
         let rootStack = NSStackView(views: [headerStack, NSBox(), mainContentStack])
         rootStack.orientation = .vertical
-        rootStack.spacing = 16
+        rootStack.spacing = 14
         rootStack.translatesAutoresizingMaskIntoConstraints = false
 
         contentView.addSubview(rootStack)
 
         NSLayoutConstraint.activate([
-            rootStack.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 20),
-            rootStack.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -20),
-            rootStack.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
-            rootStack.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
-            previewBox.heightAnchor.constraint(equalToConstant: 220)
+            rootStack.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 16),
+            rootStack.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -16),
+            rootStack.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
+            rootStack.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
+            playerView.heightAnchor.constraint(equalToConstant: 220),
+            consoleScrollView.heightAnchor.constraint(equalToConstant: 160),
+            consoleScrollView.widthAnchor.constraint(equalTo: rightStack.widthAnchor)
         ])
     }
 
@@ -260,12 +296,17 @@ final class DashboardWindowController: NSWindowController {
     }
 
     private func observeControllerState() {
+        AppLogger.shared.onLogAdded = { [weak self] line in
+            self?.appendConsoleLog(line)
+        }
+
         WallpaperController.shared.onWallpaperChanged = { [weak self] url in
             DispatchQueue.main.async {
                 self?.fileNameLabel.stringValue = url?.lastPathComponent ?? "No Wallpaper Selected"
                 self?.filePathLabel.stringValue = url?.path ?? ""
                 self?.playPauseButton.title = "Pause"
                 self?.footerStatusLabel.stringValue = "Status: Active Playback"
+                self?.playerView.player = WallpaperController.shared.playbackCore.player
             }
         }
 
@@ -282,6 +323,31 @@ final class DashboardWindowController: NSWindowController {
         }
     }
 
+    private func appendConsoleLog(_ text: String) {
+        let textWithNewline = text + "\n"
+        if let textStorage = consoleTextView.textStorage {
+            let attrString = NSAttributedString(string: textWithNewline, attributes: [
+                .font: NSFont.userFixedPitchFont(ofSize: 10) ?? NSFont.systemFont(ofSize: 10),
+                .foregroundColor: NSColor.systemGreen
+            ])
+            textStorage.append(attrString)
+            consoleTextView.scrollToEndOfDocument(nil)
+        }
+    }
+
+    private func startChatterTimer() {
+        chatterTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] _ in
+            let player = WallpaperController.shared.playbackCore.player
+            let rate = player.rate
+            let time = player.currentTime().seconds
+            let status = player.status.rawValue
+            let itemStatus = player.currentItem?.status.rawValue ?? -1
+            let itemError = player.currentItem?.error?.localizedDescription ?? "None"
+
+            AppLogger.shared.debug("[CHATTER] Player Monitor Tick: rate=\(rate), time=\(String(format: "%.2f", time))s, status=\(status), itemStatus=\(itemStatus), itemError=\(itemError)")
+        }
+    }
+
     public func updateAutoPauseUI(isEnabled: Bool) {
         autoPauseCheckbox.state = isEnabled ? .on : .off
     }
@@ -295,7 +361,9 @@ final class DashboardWindowController: NSWindowController {
 
         openPanel.begin { [weak self] result in
             if result == .OK, let selectedURL = openPanel.url {
+                AppLogger.shared.info("[CHATTER] User selected file from NSOpenPanel: \(selectedURL.path)")
                 self?.footerStatusLabel.stringValue = "Status: Processing \(selectedURL.lastPathComponent)..."
+                
                 WallpaperController.shared.importAndApplyWallpaper(from: selectedURL) { res in
                     DispatchQueue.main.async {
                         switch res {
@@ -304,8 +372,11 @@ final class DashboardWindowController: NSWindowController {
                             self?.filePathLabel.stringValue = appliedURL.path
                             self?.playPauseButton.title = "Pause"
                             self?.footerStatusLabel.stringValue = "Status: Applied \(appliedURL.lastPathComponent)"
+                            self?.playerView.player = WallpaperController.shared.playbackCore.player
+                            AppLogger.shared.info("[CHATTER] Live Dashboard AVPlayerView updated with player for \(appliedURL.lastPathComponent)")
                         case .failure(let err):
                             self?.footerStatusLabel.stringValue = "Error: \(err.localizedDescription)"
+                            AppLogger.shared.error("[CHATTER] Error importing wallpaper: \(err.localizedDescription)")
                         }
                     }
                 }
@@ -328,7 +399,7 @@ final class DashboardWindowController: NSWindowController {
     @objc private func autoPauseToggled() {
         let isEnabled = (autoPauseCheckbox.state == .on)
         AutoPauseEngine.shared.isEnabled = isEnabled
-        AppLogger.shared.info("AutoPause toggled via checkbox: \(isEnabled)")
+        AppLogger.shared.info("[CHATTER] AutoPause toggled via Dashboard checkbox: \(isEnabled)")
     }
 
     @objc private func volumeSliderChanged() {

@@ -1,7 +1,7 @@
 import Foundation
 import os
 
-/// Thread-safe logger for DynamicWallpaperEngine using unified os.Logger and file logging.
+/// Thread-safe logger for DynamicWallpaperEngine with verbose console logging and live UI stream callbacks.
 public final class AppLogger: @unchecked Sendable {
     public static let shared = AppLogger()
 
@@ -11,6 +11,9 @@ public final class AppLogger: @unchecked Sendable {
     private let debugLogURL: URL
     private let errorLogURL: URL
     private let lock = NSLock()
+
+    public private(set) var recentLogs: [String] = []
+    public var onLogAdded: ((String) -> Void)?
 
     private init() {
         let appSupport = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
@@ -23,24 +26,47 @@ public final class AppLogger: @unchecked Sendable {
 
     public func debug(_ message: String) {
         logger.debug("\(message, privacy: .public)")
-        appendToFile(url: debugLogURL, prefix: "[DEBUG]", message: message)
+        logFormatted(prefix: "[DEBUG]", message: message)
     }
 
     public func info(_ message: String) {
         logger.info("\(message, privacy: .public)")
-        appendToFile(url: debugLogURL, prefix: "[INFO]", message: message)
+        logFormatted(prefix: "[INFO]", message: message)
     }
 
     public func error(_ message: String) {
         logger.error("\(message, privacy: .public)")
-        appendToFile(url: debugLogURL, prefix: "[ERROR]", message: message)
+        logFormatted(prefix: "[ERROR]", message: message)
         appendToFile(url: errorLogURL, prefix: "[ERROR]", message: message)
     }
 
-    private func appendToFile(url: URL, prefix: String, message: String) {
-        lock.lock()
-        defer { lock.unlock() }
+    public func verbose(_ message: String) {
+        logger.debug("[VERBOSE] \(message, privacy: .public)")
+        logFormatted(prefix: "[VERBOSE]", message: message)
+    }
 
+    private func logFormatted(prefix: String, message: String) {
+        lock.lock()
+        let timestamp = ISO8601DateFormatter().string(from: Date())
+        let line = "\(timestamp) \(prefix) \(message)"
+        
+        // Print to stdout for immediate terminal feedback
+        print(line)
+        
+        recentLogs.append(line)
+        if recentLogs.count > 300 {
+            recentLogs.removeFirst()
+        }
+        lock.unlock()
+
+        appendToFile(url: debugLogURL, prefix: prefix, message: message)
+        
+        DispatchQueue.main.async { [weak self] in
+            self?.onLogAdded?(line)
+        }
+    }
+
+    private func appendToFile(url: URL, prefix: String, message: String) {
         let timestamp = ISO8601DateFormatter().string(from: Date())
         let logLine = "\(timestamp) \(prefix) \(message)\n"
         guard let data = logLine.data(using: .utf8) else { return }
