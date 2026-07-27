@@ -56,6 +56,7 @@ install_name_tool -add_rpath "@executable_path/../Frameworks" "$BUILD_DIR/Dynami
 echo "Assembling .app bundle..."
 cp "$BUILD_DIR/DynamicWallpaperEngine" "$MACOS_DIR/"
 cp "$BUILD_DIR/libDynamicWallpaperCore.dylib" "$FRAMEWORKS_DIR/"
+cp "$PROJECT_DIR/AppIcon.icns" "$RESOURCES_DIR/AppIcon.icns"
 
 # Generate Info.plist
 echo "Generating Info.plist..."
@@ -64,6 +65,8 @@ cat > "$CONTENTS_DIR/Info.plist" <<EOF
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+    <key>CFBundleIconFile</key>
+    <string>AppIcon</string>
     <key>CFBundleExecutable</key>
     <string>DynamicWallpaperEngine</string>
     <key>CFBundleIdentifier</key>

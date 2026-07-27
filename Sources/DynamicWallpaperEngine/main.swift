@@ -36,7 +36,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func setupStatusMenu() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         if let button = statusItem?.button {
-            let iconImage = NSImage(systemSymbolName: "desktopcomputer", accessibilityDescription: "Dynamic Wallpaper Engine")
+            let iconImage = NSImage(systemSymbolName: "play.laptopcomputer", accessibilityDescription: "Dynamic Wallpaper Engine")
             iconImage?.isTemplate = true
             button.image = iconImage
             button.action = #selector(statusItemClicked)
