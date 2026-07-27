@@ -1,3 +1,5 @@
+[English](README.md) | [繁體中文](zh-TW/README.md)
+
 # DynamicWallpaperEngine (macOS Native Dynamic Wallpaper Player & Plugin Platform)
 
 [![macOS Sonoma+](https://img.shields.io/badge/macOS-14.0%2B%20Sonoma-blue.svg?style=flat&logo=apple)](https://www.apple.com/macos/)

@@ -6,6 +6,8 @@ labels: 'enhancement'
 assignees: ''
 ---
 
+[English](feature_request.md) | [繁體中文](../../zh-TW/.github/ISSUE_TEMPLATE/feature_request.md)
+
 **Is your feature request related to a problem? Please describe.**
 A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]
 

@@ -1,3 +1,5 @@
+[English](PULL_REQUEST_TEMPLATE.md) | [繁體中文](../zh-TW/.github/PULL_REQUEST_TEMPLATE.md)
+
 ## Summary of Changes
 
 A clear description of what this PR introduces or fixes.

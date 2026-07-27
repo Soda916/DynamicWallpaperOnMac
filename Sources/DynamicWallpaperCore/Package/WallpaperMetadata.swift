@@ -19,7 +19,7 @@ public struct WallpaperMetadata: Codable, Equatable {
         mediaFileName: String,
         thumbnailFileName: String = "thumbnail.jpg",
         license: String = "Apache-2.0",
-        minimumAppVersion: String = "1.0.0"
+        minimumAppVersion: String = "0.1.0-alpha"
     ) {
         self.title = title
         self.author = author

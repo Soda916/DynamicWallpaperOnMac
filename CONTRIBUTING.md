@@ -1,3 +1,5 @@
+[English](CONTRIBUTING.md) | [繁體中文](zh-TW/CONTRIBUTING.md)
+
 # Contributing Guidelines
 
 Thank you for your interest in contributing to **DynamicWallpaperEngine**! This project aims to be a high-performance, low-resource open-source dynamic wallpaper player and plugin platform for macOS.

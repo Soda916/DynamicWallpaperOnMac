@@ -1,3 +1,5 @@
+[English](ARCHITECTURE.md) | [繁體中文](../zh-TW/docs/ARCHITECTURE.md)
+
 # System Architecture & Flowchart
 
 ## Overview

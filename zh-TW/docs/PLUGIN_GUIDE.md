@@ -1,14 +1,14 @@
-[English](PLUGIN_GUIDE.md) | [繁體中文](../zh-TW/docs/PLUGIN_GUIDE.md)
+[English](../../docs/PLUGIN_GUIDE.md) | [繁體中文](PLUGIN_GUIDE.md)
 
-# JavaScript Plugin & Clock SDK Guide
+# JavaScript 外掛與時鐘 SDK 指南
 
-DynamicWallpaperEngine supports extensible desktop clock widgets, dynamic overlays, and interactive animations powered by JavaScript.
+DynamicWallpaperEngine 支援可擴充的桌面時鐘小工具、動態疊加層，以及由 JavaScript 驅動的互動式動畫。
 
 ---
 
-## 📁 Plugin Package Layout
+## 📁 外掛套件目錄結構
 
-Every plugin is structured as a directory containing:
+每個外掛都組織成一個目錄，包含：
 
 ```
 my-clock-plugin/
@@ -20,14 +20,14 @@ my-clock-plugin/
 
 ---
 
-## 📄 `plugin.json` Specification
+## 📄 `plugin.json` 規格
 
 ```json
 {
   "id": "com.example.clock.minimal",
-  "name": "Minimal Digital Clock",
+  "name": "極簡數位時鐘",
   "version": "1.0.0",
-  "author": "Your Name",
+  "author": "你的名字",
   "mainJS": "main.js",
   "type": "clock",
   "defaultPositionX": 120.0,
@@ -37,10 +37,10 @@ my-clock-plugin/
 
 ---
 
-## 💻 `main.js` Example
+## 💻 `main.js` 範例
 
 ```javascript
-// Sandboxed JavaScript Clock Plugin
+// 沙箱化 JavaScript 時鐘外掛
 function renderClock() {
     const now = new Date();
     const hours = String(now.getHours()).padStart(2, '0');
@@ -50,7 +50,7 @@ function renderClock() {
     return `${hours}:${minutes}:${seconds}`;
 }
 
-// Global hook called by Swift JSPluginRuntime
+// 全域掛鉤，由 Swift JSPluginRuntime 呼叫
 onTick(function() {
     drawText(renderClock(), { font: "Inter", size: 48, color: "#FFFFFF" });
 });
