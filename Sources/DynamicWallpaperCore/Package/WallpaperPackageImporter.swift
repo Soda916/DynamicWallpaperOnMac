@@ -51,7 +51,7 @@ public final class WallpaperPackageImporter {
 
                 AppLogger.shared.info("WallpaperPackageImporter: Inspected video codec subtype: '\(subTypeString)' for \(url.lastPathComponent)")
 
-                // AV1 (av01) and VP9 (vp09 / vp9) require transcoding to HEVC if VideoToolbox hardware path is absent
+                // AV1 (av01) and VP9 (vp09 / vp9) require transcoding to HEVC with -tag:v hvc1
                 if subTypeString == "av01" || subTypeString == "vp09" || subTypeString == "vp08" {
                     completion(false, subTypeString)
                 } else {
@@ -64,7 +64,7 @@ public final class WallpaperPackageImporter {
         }
     }
 
-    /// Transcodes unsupported video format (e.g. AV1) to hardware-accelerated HEVC MP4 cache via system FFmpeg.
+    /// Transcodes unsupported video format (e.g. AV1) to hardware-accelerated HEVC MP4 cache with Apple-required hvc1 tag.
     public func transcodeVideoToHEVC(inputURL: URL, outputVideoURL: URL, completion: @escaping (Result<URL, Error>) -> Void) {
         let ffmpegPaths = ["/opt/homebrew/bin/ffmpeg", "/usr/local/bin/ffmpeg", "/usr/bin/ffmpeg"]
         guard let ffmpegPath = ffmpegPaths.first(where: { fileManager.fileExists(atPath: $0) }) else {
@@ -81,22 +81,23 @@ public final class WallpaperPackageImporter {
             "-y",
             "-i", inputURL.path,
             "-c:v", "hevc_videotoolbox",
+            "-tag:v", "hvc1",
             "-b:v", "2M",
-            "-c:a", "copy",
+            "-c:a", "aac",
             outputVideoURL.path
         ]
 
         let pipe = Pipe()
         process.standardError = pipe
 
-        AppLogger.shared.info("WallpaperPackageImporter: Launching FFmpeg HEVC VideoToolbox transcoding for \(inputURL.lastPathComponent)...")
+        AppLogger.shared.info("WallpaperPackageImporter: Launching FFmpeg HEVC VideoToolbox (-tag:v hvc1) transcoding for \(inputURL.lastPathComponent)...")
 
         do {
             try process.run()
             process.waitUntilExit()
 
             if process.terminationStatus == 0 && fileManager.fileExists(atPath: outputVideoURL.path) {
-                AppLogger.shared.info("WallpaperPackageImporter: FFmpeg transcoding complete: \(outputVideoURL.path)")
+                AppLogger.shared.info("WallpaperPackageImporter: FFmpeg hvc1 transcoding complete: \(outputVideoURL.path)")
                 completion(.success(outputVideoURL))
             } else {
                 let data = pipe.fileHandleForReading.readDataToEndOfFile()

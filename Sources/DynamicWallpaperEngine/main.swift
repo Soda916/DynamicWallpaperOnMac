@@ -1,5 +1,4 @@
 import AppKit
-import AVKit
 import AVFoundation
 import DynamicWallpaperCore
 
@@ -102,13 +101,41 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 }
 
-/// AppKit Dashboard Window Controller providing live video stream preview and real-time console chatter logging.
+/// Custom NSView rendering raw AVPlayerLayer directly without QuickTime player UI controls.
+final class RawPlayerView: NSView {
+    private let playerLayer = AVPlayerLayer()
+
+    override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+        wantsLayer = true
+        layer?.addSublayer(playerLayer)
+        playerLayer.videoGravity = .resizeAspectFill
+        layer?.cornerRadius = 8
+        layer?.masksToBounds = true
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    override func layout() {
+        super.layout()
+        playerLayer.frame = bounds
+    }
+
+    public func setPlayer(_ player: AVPlayer) {
+        playerLayer.player = player
+        playerLayer.frame = bounds
+    }
+}
+
+/// AppKit Dashboard Window Controller providing raw live video stream preview and real-time console chatter logging.
 final class DashboardWindowController: NSWindowController {
     private let titleLabel = NSTextField(labelWithString: "Dynamic Wallpaper Engine")
     private let subtitleLabel = NSTextField(labelWithString: "macOS Native Live Stream Monitor & Real-Time Console Logs")
     private let statusBadge = NSTextField(labelWithString: "Active Playback")
 
-    private let playerView = AVPlayerView()
+    private let rawPlayerView = RawPlayerView()
     private let fileNameLabel = NSTextField(labelWithString: "No Wallpaper Selected")
     private let filePathLabel = NSTextField(labelWithString: "Click below to import MP4, MOV, WEBM or GIF")
 
@@ -172,13 +199,8 @@ final class DashboardWindowController: NSWindowController {
         headerStack.alignment = .centerY
         headerStack.distribution = .equalSpacing
 
-        // Live Preview Player View Setup
-        playerView.player = WallpaperController.shared.playbackCore.player
-        playerView.controlsStyle = .inline
-        playerView.showsFrameSteppingButtons = false
-        playerView.wantsLayer = true
-        playerView.layer?.cornerRadius = 8
-        playerView.layer?.masksToBounds = true
+        // Raw Live Preview Player Setup
+        rawPlayerView.setPlayer(WallpaperController.shared.playbackCore.player)
 
         fileNameLabel.font = NSFont.boldSystemFont(ofSize: 13)
         fileNameLabel.textColor = .labelColor
@@ -188,7 +210,7 @@ final class DashboardWindowController: NSWindowController {
         filePathLabel.textColor = .secondaryLabelColor
         filePathLabel.alignment = .center
 
-        let previewInfoStack = NSStackView(views: [playerView, fileNameLabel, filePathLabel])
+        let previewInfoStack = NSStackView(views: [rawPlayerView, fileNameLabel, filePathLabel])
         previewInfoStack.orientation = .vertical
         previewInfoStack.alignment = .centerX
         previewInfoStack.spacing = 6
@@ -272,7 +294,7 @@ final class DashboardWindowController: NSWindowController {
             rootStack.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -16),
             rootStack.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
             rootStack.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
-            playerView.heightAnchor.constraint(equalToConstant: 220),
+            rawPlayerView.heightAnchor.constraint(equalToConstant: 220),
             consoleScrollView.heightAnchor.constraint(equalToConstant: 160),
             consoleScrollView.widthAnchor.constraint(equalTo: rightStack.widthAnchor)
         ])
@@ -306,7 +328,7 @@ final class DashboardWindowController: NSWindowController {
                 self?.filePathLabel.stringValue = url?.path ?? ""
                 self?.playPauseButton.title = "Pause"
                 self?.footerStatusLabel.stringValue = "Status: Active Playback"
-                self?.playerView.player = WallpaperController.shared.playbackCore.player
+                self?.rawPlayerView.setPlayer(WallpaperController.shared.playbackCore.player)
             }
         }
 
@@ -336,7 +358,7 @@ final class DashboardWindowController: NSWindowController {
     }
 
     private func startChatterTimer() {
-        chatterTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] _ in
+        chatterTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { _ in
             let player = WallpaperController.shared.playbackCore.player
             let rate = player.rate
             let time = player.currentTime().seconds
@@ -372,8 +394,8 @@ final class DashboardWindowController: NSWindowController {
                             self?.filePathLabel.stringValue = appliedURL.path
                             self?.playPauseButton.title = "Pause"
                             self?.footerStatusLabel.stringValue = "Status: Applied \(appliedURL.lastPathComponent)"
-                            self?.playerView.player = WallpaperController.shared.playbackCore.player
-                            AppLogger.shared.info("[CHATTER] Live Dashboard AVPlayerView updated with player for \(appliedURL.lastPathComponent)")
+                            self?.rawPlayerView.setPlayer(WallpaperController.shared.playbackCore.player)
+                            AppLogger.shared.info("[CHATTER] Live Dashboard RawPlayerView updated with player for \(appliedURL.lastPathComponent)")
                         case .failure(let err):
                             self?.footerStatusLabel.stringValue = "Error: \(err.localizedDescription)"
                             AppLogger.shared.error("[CHATTER] Error importing wallpaper: \(err.localizedDescription)")
