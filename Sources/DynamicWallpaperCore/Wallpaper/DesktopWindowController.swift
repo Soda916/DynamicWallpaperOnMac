@@ -26,8 +26,8 @@ public final class DesktopWindowController: NSWindowController {
     }
 
     private func setupWindowProperties(_ window: NSWindow) {
-        // Position window at the desktop window level (below desktop icons)
-        window.level = NSWindow.Level(Int(CGWindowLevelForKey(.desktopWindow)))
+        // Position window directly behind desktop icons, above Finder's static background image
+        window.level = NSWindow.Level(Int(CGWindowLevelForKey(.desktopIconWindow)) - 1)
         
         // Multi-Space & Mission Control behavior: stay on all spaces, stationary, ignore cycle
         window.collectionBehavior = [
@@ -43,6 +43,7 @@ public final class DesktopWindowController: NSWindowController {
         window.backgroundColor = .black
         window.hasShadow = false
         window.setFrame(targetScreen.frame, display: true)
+        window.orderFrontRegardless()
     }
 
     /// Attach an AVPlayer to render full-screen video on this desktop window.
@@ -60,5 +61,7 @@ public final class DesktopWindowController: NSWindowController {
         layer.sublayers?.forEach { $0.removeFromSuperlayer() }
         layer.addSublayer(newPlayerLayer)
         self.playerLayer = newPlayerLayer
+
+        window.orderFrontRegardless()
     }
 }
