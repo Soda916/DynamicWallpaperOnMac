@@ -1,11 +1,10 @@
 import AppKit
-import SwiftUI
 import AVFoundation
 import DynamicWallpaperCore
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem?
-    private var mainWindow: NSWindow?
+    private var dashboardController: DashboardWindowController?
     private var config: AppConfig = AppConfig()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -46,17 +45,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func chooseWallpaper() {
-        let openPanel = NSOpenPanel()
-        openPanel.title = "Select Video Wallpaper or GIF"
-        openPanel.allowedContentTypes = [.movie, .mpeg4Movie, .quickTimeMovie, .gif]
-        openPanel.allowsMultipleSelection = false
-        openPanel.canChooseDirectories = false
-
-        openPanel.begin { result in
-            if result == .OK, let selectedURL = openPanel.url {
-                WallpaperController.shared.importAndApplyWallpaper(from: selectedURL)
-            }
-        }
+        dashboardController?.importWallpaper()
     }
 
     @objc private func togglePlayPause() {
@@ -64,22 +53,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func openDashboard() {
-        if mainWindow == nil {
-            let contentView = NSHostingView(rootView: MainDashboardView())
-            let window = NSWindow(
-                contentRect: NSRect(x: 0, y: 0, width: 850, height: 600),
-                styleMask: [.titled, .closable, .miniaturizable, .resizable],
-                backing: .buffered,
-                defer: false
-            )
-            window.title = "Dynamic Wallpaper Engine"
-            window.center()
-            window.contentView = contentView
-            window.isReleasedWhenClosed = false
-            mainWindow = window
+        if dashboardController == nil {
+            dashboardController = DashboardWindowController()
         }
-
-        mainWindow?.makeKeyAndOrderFront(nil)
+        dashboardController?.showWindow(nil)
+        dashboardController?.window?.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
     }
 
@@ -100,208 +78,227 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 }
 
-struct MainDashboardView: View {
-    @State private var currentWallpaperURL: URL? = WallpaperController.shared.activeWallpaperURL
-    @State private var isPlaying: Bool = WallpaperController.shared.playbackCore.isPlaying
-    @State private var isMuted: Bool = false
-    @State private var volume: Float = 1.0
-    @State private var isAutoPaused: Bool = WallpaperController.shared.autoPauseEngine.isPaused
-    @State private var statusMessage: String = "Ready"
+/// AppKit Dashboard Window Controller providing zero-macro, native high-performance controls.
+final class DashboardWindowController: NSWindowController {
+    private let titleLabel = NSTextField(labelWithString: "Dynamic Wallpaper Engine")
+    private let subtitleLabel = NSTextField(labelWithString: "macOS Native, Extreme Low Resource, Open Source Dynamic Wallpaper Runtime")
+    private let statusBadge = NSTextField(labelWithString: "Active Playback")
 
-    var body: some View {
-        VStack(spacing: 20) {
-            // Header Bar
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Dynamic Wallpaper Engine")
-                        .font(.title2)
-                        .fontWeight(.bold)
-                    Text("macOS Native, Extreme Low Resource, Open Source Dynamic Wallpaper Runtime")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
+    private let previewBox = NSBox()
+    private let fileNameLabel = NSTextField(labelWithString: "No Wallpaper Selected")
+    private let filePathLabel = NSTextField(labelWithString: "Click below to import MP4, MOV, WEBM or GIF")
 
-                Spacer()
+    private let importButton = NSButton(title: "Import / Select Wallpaper Video...", target: nil, action: nil)
+    private let playPauseButton = NSButton(title: "Pause", target: nil, action: nil)
+    private let muteButton = NSButton(title: "Mute", target: nil, action: nil)
+    private let volumeSlider = NSSlider(value: 1.0, minValue: 0.0, maxValue: 1.0, target: nil, action: nil)
+    private let volumeLabel = NSTextField(labelWithString: "Volume: 100%")
+    private let footerStatusLabel = NSTextField(labelWithString: "Status: Ready")
 
-                // Auto Pause Status Badge
-                HStack(spacing: 6) {
-                    Circle()
-                        .fill(isAutoPaused ? Color.orange : Color.green)
-                        .frame(width: 10, height: 10)
-                    Text(isAutoPaused ? "Auto-Paused (Fullscreen)" : "Active Playback")
-                        .font(.caption)
-                        .fontWeight(.medium)
-                }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-                .background(Color.secondary.opacity(0.15))
-                .cornerRadius(12)
+    init() {
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 750, height: 480),
+            styleMask: [.titled, .closable, .miniaturizable, .resizable],
+            backing: .buffered,
+            defer: false
+        )
+        window.title = "Dynamic Wallpaper Engine Dashboard"
+        window.center()
+        window.isReleasedWhenClosed = false
+        super.init(window: window)
+
+        setupUI()
+        setupActions()
+        observeControllerState()
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    private func setupUI() {
+        guard let window = window, let contentView = window.contentView else { return }
+
+        titleLabel.font = NSFont.boldSystemFont(ofSize: 20)
+        subtitleLabel.font = NSFont.systemFont(ofSize: 12)
+        subtitleLabel.textColor = .secondaryLabelColor
+
+        statusBadge.font = NSFont.boldSystemFont(ofSize: 11)
+        statusBadge.textColor = .systemGreen
+
+        // Header Stack
+        let headerTextStack = NSStackView(views: [titleLabel, subtitleLabel])
+        headerTextStack.orientation = .vertical
+        headerTextStack.alignment = .leading
+        headerTextStack.spacing = 4
+
+        let headerStack = NSStackView(views: [headerTextStack, statusBadge])
+        headerStack.orientation = .horizontal
+        headerStack.alignment = .centerY
+        headerStack.distribution = .equalSpacing
+
+        // Preview Box Layout
+        previewBox.boxType = .custom
+        previewBox.fillColor = NSColor.black
+        previewBox.borderColor = NSColor.separatorColor
+        previewBox.cornerRadius = 10
+
+        fileNameLabel.font = NSFont.boldSystemFont(ofSize: 15)
+        fileNameLabel.textColor = .white
+        fileNameLabel.alignment = .center
+
+        filePathLabel.font = NSFont.systemFont(ofSize: 11)
+        filePathLabel.textColor = .lightGray
+        filePathLabel.alignment = .center
+
+        let previewStack = NSStackView(views: [fileNameLabel, filePathLabel])
+        previewStack.orientation = .vertical
+        previewStack.alignment = .centerX
+        previewStack.spacing = 6
+        previewStack.translatesAutoresizingMaskIntoConstraints = false
+
+        previewBox.addSubview(previewStack)
+        NSLayoutConstraint.activate([
+            previewStack.centerXAnchor.constraint(equalTo: previewBox.centerXAnchor),
+            previewStack.centerYAnchor.constraint(equalTo: previewBox.centerYAnchor),
+            previewStack.leadingAnchor.constraint(greaterThanOrEqualTo: previewBox.leadingAnchor, constant: 16),
+            previewStack.trailingAnchor.constraint(lessThanOrEqualTo: previewBox.trailingAnchor, constant: -16)
+        ])
+
+        importButton.bezelStyle = .rounded
+        importButton.controlSize = .large
+
+        playPauseButton.bezelStyle = .rounded
+        muteButton.bezelStyle = .rounded
+
+        let mediaControlStack = NSStackView(views: [playPauseButton, muteButton])
+        mediaControlStack.orientation = .horizontal
+        mediaControlStack.spacing = 12
+
+        volumeLabel.font = NSFont.systemFont(ofSize: 12)
+        volumeLabel.textColor = .secondaryLabelColor
+
+        footerStatusLabel.font = NSFont.systemFont(ofSize: 11)
+        footerStatusLabel.textColor = .tertiaryLabelColor
+
+        // Right Controls Stack
+        let rightStack = NSStackView(views: [
+            NSTextField(labelWithString: "Playback Controls"),
+            mediaControlStack,
+            volumeLabel,
+            volumeSlider,
+            footerStatusLabel
+        ])
+        rightStack.orientation = .vertical
+        rightStack.alignment = .leading
+        rightStack.spacing = 14
+
+        // Main Split Content
+        let leftStack = NSStackView(views: [previewBox, importButton])
+        leftStack.orientation = .vertical
+        leftStack.spacing = 12
+
+        let mainContentStack = NSStackView(views: [leftStack, rightStack])
+        mainContentStack.orientation = .horizontal
+        mainContentStack.spacing = 24
+        mainContentStack.distribution = .fillEqually
+
+        let rootStack = NSStackView(views: [headerStack, NSBox(), mainContentStack])
+        rootStack.orientation = .vertical
+        rootStack.spacing = 16
+        rootStack.translatesAutoresizingMaskIntoConstraints = false
+
+        contentView.addSubview(rootStack)
+
+        NSLayoutConstraint.activate([
+            rootStack.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 20),
+            rootStack.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -20),
+            rootStack.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
+            rootStack.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
+            previewBox.heightAnchor.constraint(equalToConstant: 220)
+        ])
+    }
+
+    private func setupActions() {
+        importButton.target = self
+        importButton.action = #selector(importWallpaper)
+
+        playPauseButton.target = self
+        playPauseButton.action = #selector(togglePlayPause)
+
+        muteButton.target = self
+        muteButton.action = #selector(toggleMute)
+
+        volumeSlider.target = self
+        volumeSlider.action = #selector(volumeSliderChanged)
+    }
+
+    private func observeControllerState() {
+        WallpaperController.shared.onWallpaperChanged = { [weak self] url in
+            DispatchQueue.main.async {
+                self?.fileNameLabel.stringValue = url?.lastPathComponent ?? "No Wallpaper Selected"
+                self?.filePathLabel.stringValue = url?.path ?? ""
+                self?.playPauseButton.title = "Pause"
+                self?.footerStatusLabel.stringValue = "Status: Active Playback"
             }
-
-            Divider()
-
-            // Main Content Area
-            HStack(spacing: 20) {
-                // Left Side: Selected Wallpaper Preview Box
-                VStack(spacing: 12) {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(Color.black.opacity(0.8))
-                            .frame(height: 240)
-
-                        if let url = currentWallpaperURL {
-                            VStack(spacing: 8) {
-                                Image(systemName: "film.fill")
-                                    .font(.system(size: 40))
-                                    .foregroundColor(.blue)
-                                Text(url.lastPathComponent)
-                                    .font(.headline)
-                                    .foregroundColor(.white)
-                                    .lineLimit(1)
-                                Text(url.path)
-                                    .font(.caption2)
-                                    .foregroundColor(.gray)
-                                    .lineLimit(2)
-                                    .multilineTextAlignment(.center)
-                                    .padding(.horizontal)
-                            }
-                        } else {
-                            VStack(spacing: 12) {
-                                Image(systemName: "photo.badge.plus")
-                                    .font(.system(size: 44))
-                                    .foregroundColor(.gray)
-                                Text("No Wallpaper Selected")
-                                    .font(.headline)
-                                    .foregroundColor(.gray)
-                                Text("Click below to import MP4, MOV, WEBM or GIF")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                            }
-                        }
-                    }
-
-                    // Import Button
-                    Button(action: importWallpaper) {
-                        HStack {
-                            Image(systemName: "square.and.arrow.down")
-                            Text("Import / Select Wallpaper Video...")
-                                .fontWeight(.semibold)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 10)
-                        .background(Color.accentColor)
-                        .foregroundColor(.white)
-                        .cornerRadius(8)
-                    }
-                    .buttonStyle(.plain)
-                }
-
-                // Right Side: Control & Options Panel
-                VStack(alignment: .leading, spacing: 16) {
-                    Text("Playback Controls")
-                        .font(.headline)
-
-                    // Play / Pause Toggle
-                    HStack {
-                        Button(action: togglePlayPause) {
-                            HStack {
-                                Image(systemName: isPlaying ? "pause.fill" : "play.fill")
-                                Text(isPlaying ? "Pause" : "Play")
-                            }
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 8)
-                            .background(Color.secondary.opacity(0.2))
-                            .cornerRadius(6)
-                        }
-                        .buttonStyle(.plain)
-
-                        Button(action: toggleMute) {
-                            HStack {
-                                Image(systemName: isMuted ? "speaker.slash.fill" : "speaker.wave.2.fill")
-                                Text(isMuted ? "Unmute" : "Mute")
-                            }
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 8)
-                            .background(Color.secondary.opacity(0.2))
-                            .cornerRadius(6)
-                        }
-                        .buttonStyle(.plain)
-                    }
-
-                    // Volume Slider
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("Volume: \(Int(volume * 100))%")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-
-                        Slider(value: $volume, in: 0.0...1.0) { _ in
-                            WallpaperController.shared.setVolume(volume)
-                        }
-                    }
-
-                    Divider()
-
-                    // Status Bar Footer
-                    Text("Status: \(statusMessage)")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-
-                    Spacer()
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
-
-            Spacer()
         }
-        .frame(minWidth: 800, minHeight: 500)
-        .padding(24)
-        .onAppear {
-            setupObservers()
+
+        WallpaperController.shared.autoPauseEngine.onPauseStateChanged = { [weak self] isPaused in
+            DispatchQueue.main.async {
+                if isPaused {
+                    self?.statusBadge.stringValue = "Auto-Paused (Fullscreen)"
+                    self?.statusBadge.textColor = .systemOrange
+                } else {
+                    self?.statusBadge.stringValue = "Active Playback"
+                    self?.statusBadge.textColor = .systemGreen
+                }
+            }
         }
     }
 
-    private func importWallpaper() {
+    @objc public func importWallpaper() {
         let openPanel = NSOpenPanel()
         openPanel.title = "Select Video Wallpaper or GIF"
         openPanel.allowedContentTypes = [.movie, .mpeg4Movie, .quickTimeMovie, .gif]
         openPanel.allowsMultipleSelection = false
         openPanel.canChooseDirectories = false
 
-        openPanel.begin { result in
+        openPanel.begin { [weak self] result in
             if result == .OK, let selectedURL = openPanel.url {
-                statusMessage = "Processing \(selectedURL.lastPathComponent)..."
+                self?.footerStatusLabel.stringValue = "Status: Processing \(selectedURL.lastPathComponent)..."
                 WallpaperController.shared.importAndApplyWallpaper(from: selectedURL) { res in
-                    switch res {
-                    case .success(let appliedURL):
-                        currentWallpaperURL = appliedURL
-                        isPlaying = true
-                        statusMessage = "Applied \(appliedURL.lastPathComponent)"
-                    case .failure(let err):
-                        statusMessage = "Error: \(err.localizedDescription)"
+                    DispatchQueue.main.async {
+                        switch res {
+                        case .success(let appliedURL):
+                            self?.fileNameLabel.stringValue = appliedURL.lastPathComponent
+                            self?.filePathLabel.stringValue = appliedURL.path
+                            self?.playPauseButton.title = "Pause"
+                            self?.footerStatusLabel.stringValue = "Status: Applied \(appliedURL.lastPathComponent)"
+                        case .failure(let err):
+                            self?.footerStatusLabel.stringValue = "Error: \(err.localizedDescription)"
+                        }
                     }
                 }
             }
         }
     }
 
-    private func togglePlayPause() {
+    @objc private func togglePlayPause() {
         WallpaperController.shared.togglePlayPause()
-        isPlaying = WallpaperController.shared.playbackCore.isPlaying
+        let isPlaying = WallpaperController.shared.playbackCore.isPlaying
+        playPauseButton.title = isPlaying ? "Pause" : "Play"
     }
 
-    private func toggleMute() {
-        isMuted.toggle()
+    @objc private func toggleMute() {
+        let isMuted = !WallpaperController.shared.playbackCore.player.isMuted
         WallpaperController.shared.setMuted(isMuted)
+        muteButton.title = isMuted ? "Unmute" : "Mute"
     }
 
-    private func setupObservers() {
-        WallpaperController.shared.onWallpaperChanged = { url in
-            currentWallpaperURL = url
-            isPlaying = true
-        }
-        WallpaperController.shared.autoPauseEngine.onPauseStateChanged = { paused in
-            isAutoPaused = paused
-        }
+    @objc private func volumeSliderChanged() {
+        let vol = volumeSlider.floatValue
+        WallpaperController.shared.setVolume(vol)
+        volumeLabel.stringValue = "Volume: \(Int(vol * 100))%"
     }
 }
 
