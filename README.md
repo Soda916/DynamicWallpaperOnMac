@@ -73,13 +73,14 @@ This project adheres to a strict hierarchy of design decisions:
 - Xcode 15.0+ or Swift 5.10 Toolchain
 - Apple Silicon (M1/M2/M3/M4) or Intel x86_64 Mac
 
-### Building Universal Binary
+### Building the Application Bundle
 ```bash
 git clone https://github.com/your-org/DynamicWallpaperEngine.git
 cd DynamicWallpaperEngine
 
-# Build Universal Binary release
-swift build -c release --arch arm64 --arch x86_64
+# Build macOS .app bundle and release zip
+chmod +x scripts/build_app.sh
+./scripts/build_app.sh
 ```
 
 ---

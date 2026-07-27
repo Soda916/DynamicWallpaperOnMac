@@ -73,13 +73,14 @@
 - Xcode 15.0+ 或 Swift 5.10 工具鏈
 - Apple Silicon (M1/M2/M3/M4) 或 Intel x86_64 Mac
 
-### 建置通用二進位檔 (Universal Binary)
+### 建置應用程式 (Application Bundle)
 ```bash
 git clone https://github.com/your-org/DynamicWallpaperEngine.git
 cd DynamicWallpaperEngine
 
-# 建置通用二進位檔發佈版本
-swift build -c release --arch arm64 --arch x86_64
+# 建置 macOS .app bundle 和發佈 zip
+chmod +x scripts/build_app.sh
+./scripts/build_app.sh
 ```
 
 ---
