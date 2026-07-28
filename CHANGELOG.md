@@ -7,6 +7,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.2-alpha] - 2026-07-29
+
+### Added & Refactored
+- **Centralized Hidden Media Library (`MediaStorageManager`)**:
+  - Automatically centralizes imported wallpaper files inside `~/.dynamicwallpaper/media/` hidden directory.
+  - Supports 5 storage modes: Symbolic Link (`symlink`), Hard Link (`hardlink`), Direct Copy (`copy`), File Move (`move`), and Original Path (`direct`).
+- **Native FFmpeg Manager (`FFmpegManager`)**:
+  - Dynamically detects system `ffmpeg` binary from PATH and Homebrew (`/opt/homebrew/bin/ffmpeg`).
+  - No bundled FFmpeg binary inside app bundle to maintain lightweight native footprint.
+  - Non-intrusive Homebrew installation prompt for users when AV1/VP9 codecs require transcoding.
+- **JavaScript Desktop Plugin & WebKit Overlay Engine (`PluginManager`)**:
+  - Embedded WebKit (`WKWebView`) transparent desktop overlay layer on top of video wallpapers.
+  - Built-in sleek glassmorphism **Digital Clock** widget (`~/.dynamicwallpaper/plugins/digital_clock`).
+- **GitHub Release Auto-Updater & Notification (`UpdateChecker`)**:
+  - Automated version comparison algorithm (`isVersionNewer`) supporting semantic pre-release tags (`0.1.2-alpha`).
+  - Asynchronous update notification and native `NSAlert` modal dialog with release notes and GitHub download links.
+
+### Performance & Bug Fixes
+- **Ultra-Low Memory & CPU Logging Optimization (`AppLogger`)**:
+  - Resolved 101% CPU usage spike and 1.6GB disk write bloat by eliminating per-log `ISO8601DateFormatter` re-allocations and synchronous file handles.
+  - Asynchronous background I/O queue (`ioQueue`), 150-entry memory log limit, and 1MB log file rotation cap (`maxLogFileSize`).
+- **AppConfig Schema v3 Migration & Fallback (`AppConfig`)**:
+  - Upgraded configuration schema to `v3` with graceful property fallbacks and automatic legacy schema migration (`.migrated`).
+
 ## [0.1.1-alpha] - 2026-07-28
 
 ### Added

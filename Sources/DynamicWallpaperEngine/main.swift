@@ -81,6 +81,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 if let idx = self?.config.playlistIndex {
                     WallpaperController.shared.playIndex(idx)
                 }
+        // Trigger asynchronous update check
+        if config.autoCheckUpdates {
+            UpdateChecker.shared.checkForUpdates()
+        }
+
+        NotificationCenter.default.addObserver(forName: .appUpdateAvailable, object: nil, queue: .main) { notif in
+            if let release = notif.object as? UpdateChecker.ReleaseInfo {
+                UpdateChecker.shared.presentUpdateAlert(for: release)
             }
         }
     }

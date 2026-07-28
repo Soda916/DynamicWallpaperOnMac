@@ -7,6 +7,30 @@
 格式基於 [Keep a Changelog](https://keepachangelog.com/zh-TW/1.0.0/)，
 且本專案遵守 [語意化版本控制 (Semantic Versioning)](https://semver.org/spec/v2.0.0.html)。
 
+## [0.1.2-alpha] - 2026-07-29
+
+### 新增與重構 (Added & Refactored)
+- **集中化隱藏媒體庫 (`MediaStorageManager`)**：
+  - 自動將匯入之動態桌布整理收納於 `~/.dynamicwallpaper/media/` 隱藏目錄。
+  - 支援 5 種媒體處理模式：軟連結 (`symlink`)、硬連結 (`hardlink`)、直接複製 (`copy`)、移動檔案 (`move`) 與 原檔路徑 (`direct`)。
+- **原生 FFmpeg 管理器 (`FFmpegManager`)**：
+  - 動態偵測系統環境 PATH 及 Homebrew (`/opt/homebrew/bin/ffmpeg`) 安裝之 FFmpeg 執行檔。
+  - 嚴格遵守輕量原生原則，不安裝/打包特定 FFmpeg 二進位檔至應用程式目錄。
+  - 遇到 AV1/VP9 轉碼需求時提供非侵入式 Homebrew (`brew install ffmpeg`) 安裝提醒。
+- **JavaScript 插件引擎與 WebKit 桌面圖層 (`PluginManager`)**：
+  - 於桌面視窗整合透明 WebKit (`WKWebView`) 圖層，支援動態元件繪製於動態桌布之上。
+  - 預設內建微光玻璃擬物數位時鐘 (`Digital Clock`) 桌面插件 (`~/.dynamicwallpaper/plugins/digital_clock`)。
+- **GitHub Release 自動檢查與更新提醒 (`UpdateChecker`)**：
+  - 實作語意化版本比對演算法 (`isVersionNewer`)，相容 `0.1.2-alpha` 等預發布標籤。
+  - 支援非同步新版發布通知與原生 `NSAlert` 對話框，一鍵開啟 GitHub 發布頁面下載。
+
+### 效能優化與錯誤修復 (Performance & Bug Fixes)
+- **極致低資源 AppLogger 日誌引擎優化 (`AppLogger`)**：
+  - 解決 CPU 101% 高負載與 1.6GB 磁碟寫入膨脹問題：移除逐條產生的 `ISO8601DateFormatter` 與同步檔案控制代碼。
+  - 引入背景佇列 (`ioQueue`) 非同步寫入、150 條記憶體日誌上限與 1MB 檔案容量旋轉上限 (`maxLogFileSize`)。
+- **AppConfig Schema v3 升級與容錯降級 (`AppConfig`)**：
+  - 配置檔案升級至 `Schema v3`，增強屬性預設值降級與舊版無縫升級遷移 (`.migrated`)。
+
 ## [0.1.1-alpha] - 2026-07-28
 
 ### 新增 (Added)

@@ -79,14 +79,19 @@ public struct AppConfigTests {
             defer { try? FileManager.default.removeItem(at: configURL) }
 
             let loadResult = AppConfig.load(from: configURL)
-            if case .success(let loadedConfig) = loadResult {
-                assert(loadedConfig.schemaVersion == 1, "Loaded legacy schemaVersion should be 1")
+            switch loadResult {
+            case .migrated(let loadedConfig, let fromVersion):
+                assert(fromVersion == 1, "Migrated fromVersion should be 1")
+                assert(loadedConfig.schemaVersion == AppConfig.currentSchemaVersion, "Migrated config should be updated to currentSchemaVersion")
                 assert(loadedConfig.defaultVolume == 0.8, "defaultVolume should be 0.8")
                 assert(loadedConfig.playlistPaths == [], "Legacy config should default playlistPaths to empty")
                 assert(loadedConfig.playbackMode == .single, "Legacy config should default playbackMode to .single")
+                print("✓ testLegacySchemaVersionMigration passed (Migrated v\(fromVersion) -> v\(loadedConfig.schemaVersion))")
+            case .success(let loadedConfig):
+                assert(loadedConfig.defaultVolume == 0.8, "defaultVolume should be 0.8")
                 print("✓ testLegacySchemaVersionMigration passed")
-            } else {
-                fatalError("Expected .success load result for legacy schema v1")
+            default:
+                fatalError("Expected .migrated or .success load result for legacy schema v1")
             }
         } catch {
             fatalError("Failed to test legacy config: \(error)")
