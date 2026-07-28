@@ -66,17 +66,19 @@ public final class WallpaperPackageImporter {
 
     /// Transcodes unsupported video format (e.g. AV1) to hardware-accelerated HEVC MP4 cache with Apple-required hvc1 tag.
     public func transcodeVideoToHEVC(inputURL: URL, outputVideoURL: URL, completion: @escaping (Result<URL, Error>) -> Void) {
-        let ffmpegPaths = ["/opt/homebrew/bin/ffmpeg", "/usr/local/bin/ffmpeg", "/usr/bin/ffmpeg"]
-        guard let ffmpegPath = ffmpegPaths.first(where: { fileManager.fileExists(atPath: $0) }) else {
-            AppLogger.shared.error("WallpaperPackageImporter: FFmpeg binary not found in standard paths")
-            completion(.failure(NSError(domain: "WallpaperPackageImporter", code: 404, userInfo: [NSLocalizedDescriptionKey: "FFmpeg binary not found. Please install ffmpeg via Homebrew."])))
+        guard let ffmpegURL = FFmpegManager.shared.findFFmpegURL() else {
+            AppLogger.shared.error("WallpaperPackageImporter: System FFmpeg binary not found")
+            let err = NSError(domain: "WallpaperPackageImporter", code: 404, userInfo: [
+                NSLocalizedDescriptionKey: "FFmpeg binary not found on system. Please run '\(FFmpegManager.shared.homebrewInstallInstruction)' to enable AV1/VP9 transcoding."
+            ])
+            completion(.failure(err))
             return
         }
 
         try? fileManager.removeItem(at: outputVideoURL)
 
         let process = Process()
-        process.executableURL = URL(fileURLWithPath: ffmpegPath)
+        process.executableURL = ffmpegURL
         process.arguments = [
             "-y",
             "-i", inputURL.path,
