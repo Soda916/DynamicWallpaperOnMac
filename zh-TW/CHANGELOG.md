@@ -7,6 +7,35 @@
 格式基於 [Keep a Changelog](https://keepachangelog.com/zh-TW/1.0.0/)，
 且本專案遵守 [語意化版本控制 (Semantic Versioning)](https://semver.org/spec/v2.0.0.html)。
 
+## [0.1.1-alpha] - 2026-07-28
+
+### 新增 (Added)
+- **多影片播放清單系統 (`Playlist`)**：
+  - 支援一次選取/匯入多個影片，Dashboard 新增 `NSTableView` 清單列表、雙擊指定切換、單條目移除與一鍵清空功能。
+  - 三種播放模式：單條目循環 (`Single Track Loop`)、清單順序播放 (`Sequential Playlist`) 與隨機播放 (`Random Shuffle`)。
+  - 新增「上一首 `⏮ Prev`」、「下一首 `Next ⏭`」按鈕與模式切換下拉選單。
+- **Dashboard 拖曳自動匯入 (`Drag & Drop Import`)**：
+  - 支援直接將一個或多個影片檔案 (.mp4, .mov, .webm, .gif) 拖拽進 Dashboard 視窗，自動按拖放順序追加至播放清單。
+- **背景影片播放進度條 (`Progress Scrubber & Timer`)**：
+  - 加回影片進度控制條 (`NSSlider`) 與時間標籤 (`MM:SS / MM:SS`)，支援拖動進度條即時快進/快退桌面背景播放點。
+- **自動化 Universal 2 DMG 打包腳本 (`build_app.sh`)**：
+  - 新增自動化 Universal Binary (arm64 + x86_64) 二進位編譯與 DMG 安裝鏡像生成指令。
+
+### 變更與重構 (Changed & Refactored)
+- **智慧全螢幕 Auto-Pause 引擎重構 (`AutoPauseEngine`)**：
+  - 改為全顯示器 (`NSScreen.screens`) 所有可見視窗 (`CGWindowListCopyWindowInfo`) 動態掃描，解決非聚焦全螢幕、多螢幕情境下的零 CPU/GPU 資源浪費問題。
+- **CoreAudio 智慧音訊偵測與系統音效過濾 (`AudioDuckingDetector`)**：
+  - 監控 CoreAudio 裝置音訊 Output 通道，自動過濾 `systemsoundserverd`（通知音/打字聲）、`coreaudiod` 等背景系統服務。
+  - 於選單列與 Dashboard UI 即時透明化顯示發聲 App 名稱（例如：`Active: Spotify`）。
+- **平滑音量漸變 Fade Engine (`MediaPlaybackCore`)**：
+  - 實裝 30Hz Ease-Out 音量漸變插值引擎，切換 Ducking 音量時會在 ~0.8 秒內優雅地「漸小」與「漸大」。
+
+### 修復與持久化 (Fixed & Persistence)
+- **設定檔升級為 Schema v2 (`AppConfig`)**：
+  - 自動記錄與恢復 `playlistPaths`、`playbackMode` 與 `playlistIndex`，具備 JSON 向後相容解碼能力。
+- **單一實例防重開保護 (Single Instance Enforcement)**：
+  - 啟動時自動檢測 PID，防止重複開啟多個 Engine 實例。
+
 ## [0.1.0-alpha] - 2026-07-27
 
 ### 新增
