@@ -17,11 +17,15 @@ let package = Package(
             targets: ["DynamicWallpaperCore"]
         )
     ],
-    dependencies: [],
+    dependencies: [
+        .package(url: "https://github.com/sparkle-project/Sparkle", from: "2.6.0")
+    ],
     targets: [
         .target(
             name: "DynamicWallpaperCore",
-            dependencies: [],
+            dependencies: [
+                .product(name: "Sparkle", package: "Sparkle")
+            ],
             path: "Sources/DynamicWallpaperCore"
         ),
         .executableTarget(
@@ -36,3 +40,4 @@ let package = Package(
         )
     ]
 )
+

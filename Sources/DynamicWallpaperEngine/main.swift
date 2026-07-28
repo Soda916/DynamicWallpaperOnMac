@@ -152,6 +152,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         menu.addItem(NSMenuItem.separator())
         menu.addItem(NSMenuItem(title: "Open Dashboard", action: #selector(openDashboard), keyEquivalent: "o"))
+        menu.addItem(NSMenuItem(title: "Check for Updates...", action: #selector(checkForUpdatesClicked), keyEquivalent: "u"))
         menu.addItem(NSMenuItem.separator())
         menu.addItem(NSMenuItem(title: "Quit DynamicWallpaperEngine", action: #selector(quitApp), keyEquivalent: "q"))
 
@@ -257,6 +258,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         dashboardController?.window?.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
         AppLogger.shared.info("[CHATTER] Opened Dashboard Window Controller")
+    }
+
+    @objc private func checkForUpdatesClicked() {
+        SparkleUpdaterManager.shared.checkForUpdates()
     }
 
     @objc private func quitApp() {

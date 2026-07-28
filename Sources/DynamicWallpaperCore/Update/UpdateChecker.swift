@@ -25,41 +25,10 @@ public final class UpdateChecker {
 
     private init() {}
 
-    /// Checks latest release version from GitHub API asynchronously.
-    public func checkForUpdates(repositoryOwner: String = "dustlee", repositoryName: String = "DynamicWallPaper", completion: ((Result<ReleaseInfo, Error>) -> Void)? = nil) {
-        let urlString = "https://api.github.com/repos/\(repositoryOwner)/\(repositoryName)/releases/latest"
-        guard let url = URL(string: urlString) else {
-            completion?(.failure(NSError(domain: "UpdateChecker", code: 400, userInfo: [NSLocalizedDescriptionKey: "Invalid GitHub repository URL"])))
-            return
-        }
-
-        var request = URLRequest(url: url)
-        request.setValue("application/vnd.github.v3+json", forHTTPHeaderField: "Accept")
-        request.timeoutInterval = 10.0
-
-        URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
-            if let error = error {
-                completion?(.failure(error))
-                return
-            }
-            guard let data = data else {
-                completion?(.failure(NSError(domain: "UpdateChecker", code: 500, userInfo: [NSLocalizedDescriptionKey: "No data returned from update API"])))
-                return
-            }
-
-            do {
-                let release = try JSONDecoder().decode(ReleaseInfo.self, from: data)
-                if let self = self, self.isVersionNewer(latest: release.tagName, current: UpdateChecker.currentAppVersion) {
-                    AppLogger.shared.info("[UPDATE-CHECKER] New release available: \(release.tagName)")
-                    DispatchQueue.main.async {
-                        NotificationCenter.default.post(name: .appUpdateAvailable, object: release)
-                    }
-                }
-                completion?(.success(release))
-            } catch {
-                completion?(.failure(error))
-            }
-        }.resume()
+    /// Starts Sparkle auto-update engine and triggers update check via raw GitHub appcast feed.
+    public func checkForUpdates(repositoryOwner: String = "Soda916", repositoryName: String = "DynamicWallpaperOnMac", completion: ((Result<ReleaseInfo, Error>) -> Void)? = nil) {
+        SparkleUpdaterManager.shared.start(startingUpdater: true)
+        SparkleUpdaterManager.shared.checkForUpdates()
     }
 
     /// Compares two version strings (e.g. "v0.1.3" vs "0.1.2-alpha")
