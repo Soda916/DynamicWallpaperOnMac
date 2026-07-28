@@ -5,7 +5,7 @@ import os
 public final class AppLogger: @unchecked Sendable {
     public static let shared = AppLogger()
 
-    private let logger = Logger(subsystem: "com.antigravity.DynamicWallpaperEngine", category: "Core")
+    private let logger = Logger(subsystem: "tw.soda916.DynamicWallpaperEngine", category: "Core")
     private let fileManager = FileManager.default
     private let logDirectory: URL
     private let debugLogURL: URL

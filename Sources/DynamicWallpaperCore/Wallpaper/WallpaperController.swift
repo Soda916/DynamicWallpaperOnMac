@@ -7,6 +7,8 @@ public extension Notification.Name {
     static let wallpaperAutoPauseConfigDidChange = Notification.Name("wallpaperAutoPauseConfigDidChange")
     static let wallpaperVolumeDidChange = Notification.Name("wallpaperVolumeDidChange")
     static let wallpaperAudioDuckingDidChange = Notification.Name("wallpaperAudioDuckingDidChange")
+    static let wallpaperPlaylistDidChange = Notification.Name("wallpaperPlaylistDidChange")
+    static let wallpaperPlaybackModeDidChange = Notification.Name("wallpaperPlaybackModeDidChange")
 }
 
 public final class WallpaperController: @unchecked Sendable {
@@ -18,11 +20,17 @@ public final class WallpaperController: @unchecked Sendable {
 
     public private(set) var activeWallpaperURL: URL?
     public var onWallpaperChanged: ((URL?) -> Void)?
+    public private(set) var isManuallyPaused = false
+
+    public private(set) var playlist: [URL] = []
+    public private(set) var currentIndex: Int = 0
+    public private(set) var playbackMode: PlaybackMode = .single
 
     private var autoPauseObserver: NSObjectProtocol?
 
     private init() {
         setupAutoPauseIntegration()
+        setupPlaybackEndHook()
     }
 
     private func setupAutoPauseIntegration() {
@@ -33,6 +41,13 @@ public final class WallpaperController: @unchecked Sendable {
         ) { [weak self] notif in
             guard let self = self else { return }
             guard let isPaused = notif.object as? Bool else { return }
+            
+            // If the user has manually paused, do NOT let auto-pause auto-resume it!
+            if self.isManuallyPaused {
+                AppLogger.shared.info("WallpaperController: User has manually paused, ignoring Auto-Pause state change notification (isPaused=\(isPaused))")
+                return
+            }
+            
             if isPaused {
                 AppLogger.shared.info("WallpaperController: Auto-pausing desktop playback")
                 self.playbackCore.pause()
@@ -46,8 +61,118 @@ public final class WallpaperController: @unchecked Sendable {
         autoPauseEngine.startMonitoring()
     }
 
+    private func setupPlaybackEndHook() {
+        playbackCore.onItemDidEnd = { [weak self] in
+            guard let self = self else { return }
+            AppLogger.shared.info("[PLAYLIST] Current item ended under playbackMode '\(self.playbackMode.rawValue)'")
+            switch self.playbackMode {
+            case .single:
+                self.playbackCore.player.seek(to: .zero) { _ in
+                    self.playbackCore.play()
+                }
+            case .sequential:
+                self.playNext()
+            case .random:
+                self.playRandom()
+            }
+        }
+    }
+
+    public func setPlaybackMode(_ mode: PlaybackMode) {
+        self.playbackMode = mode
+        AppLogger.shared.info("[PLAYLIST] Playback mode changed to \(mode.rawValue)")
+        NotificationCenter.default.post(name: .wallpaperPlaybackModeDidChange, object: mode)
+    }
+
+    public func setPlaylist(_ urls: [URL], currentIndex: Int = 0) {
+        self.playlist = urls
+        if !urls.isEmpty {
+            self.currentIndex = max(0, min(currentIndex, urls.count - 1))
+        } else {
+            self.currentIndex = 0
+        }
+        NotificationCenter.default.post(name: .wallpaperPlaylistDidChange, object: self.playlist)
+        AppLogger.shared.info("[PLAYLIST] Playlist set with \(urls.count) item(s)")
+    }
+
+    public func addToPlaylist(_ urls: [URL]) {
+        for url in urls {
+            if !playlist.contains(where: { $0.path == url.path }) {
+                playlist.append(url)
+            }
+        }
+        AppLogger.shared.info("[PLAYLIST] Added \(urls.count) items to playlist (Total: \(playlist.count))")
+        NotificationCenter.default.post(name: .wallpaperPlaylistDidChange, object: self.playlist)
+    }
+
+    public func removeFromPlaylist(at index: Int) {
+        guard playlist.indices.contains(index) else { return }
+        let removedURL = playlist.remove(at: index)
+        AppLogger.shared.info("[PLAYLIST] Removed item at index \(index): \(removedURL.lastPathComponent)")
+        if currentIndex >= playlist.count {
+            currentIndex = max(0, playlist.count - 1)
+        }
+        NotificationCenter.default.post(name: .wallpaperPlaylistDidChange, object: self.playlist)
+    }
+
+    public func clearPlaylist() {
+        playlist.removeAll()
+        currentIndex = 0
+        NotificationCenter.default.post(name: .wallpaperPlaylistDidChange, object: self.playlist)
+        AppLogger.shared.info("[PLAYLIST] Playlist cleared")
+    }
+
+    public func playNext() {
+        guard !playlist.isEmpty else { return }
+        currentIndex = (currentIndex + 1) % playlist.count
+        let targetURL = playlist[currentIndex]
+        AppLogger.shared.info("[PLAYLIST] Advancing to next track [\(currentIndex + 1)/\(playlist.count)]: \(targetURL.lastPathComponent)")
+        importAndApplyWallpaper(from: targetURL)
+    }
+
+    public func playPrevious() {
+        guard !playlist.isEmpty else { return }
+        currentIndex = (currentIndex - 1 + playlist.count) % playlist.count
+        let targetURL = playlist[currentIndex]
+        AppLogger.shared.info("[PLAYLIST] Moving to previous track [\(currentIndex + 1)/\(playlist.count)]: \(targetURL.lastPathComponent)")
+        importAndApplyWallpaper(from: targetURL)
+    }
+
+    public func playRandom() {
+        guard !playlist.isEmpty else { return }
+        if playlist.count == 1 {
+            currentIndex = 0
+        } else {
+            var randomIndex = Int.random(in: 0..<playlist.count)
+            if randomIndex == currentIndex {
+                randomIndex = (randomIndex + 1) % playlist.count
+            }
+            currentIndex = randomIndex
+        }
+        let targetURL = playlist[currentIndex]
+        AppLogger.shared.info("[PLAYLIST] Randomly selected track [\(currentIndex + 1)/\(playlist.count)]: \(targetURL.lastPathComponent)")
+        importAndApplyWallpaper(from: targetURL)
+    }
+
+    public func playIndex(_ index: Int) {
+        guard playlist.indices.contains(index) else { return }
+        currentIndex = index
+        let targetURL = playlist[index]
+        AppLogger.shared.info("[PLAYLIST] Playing specific track index [\(index + 1)/\(playlist.count)]: \(targetURL.lastPathComponent)")
+        importAndApplyWallpaper(from: targetURL)
+    }
+
     public func importAndApplyWallpaper(from url: URL, completion: ((Result<URL, Error>) -> Void)? = nil) {
         AppLogger.shared.info("[CHATTER] WallpaperController: Received user request to import wallpaper: \(url.path)")
+
+        // Automatically maintain in playlist if not present
+        if !playlist.contains(where: { $0.path == url.path }) {
+            playlist.append(url)
+            currentIndex = playlist.count - 1
+            NotificationCenter.default.post(name: .wallpaperPlaylistDidChange, object: self.playlist)
+        } else if let idx = playlist.firstIndex(where: { $0.path == url.path }) {
+            currentIndex = idx
+        }
 
         let fileManager = FileManager.default
         guard fileManager.fileExists(atPath: url.path) else {
@@ -115,6 +240,7 @@ public final class WallpaperController: @unchecked Sendable {
 
     private func applyVideo(url: URL) {
         self.activeWallpaperURL = url
+        self.isManuallyPaused = false
         playbackCore.loadVideo(url: url)
         displayManager.updateScreens(with: playbackCore.player)
         playbackCore.play()
@@ -150,12 +276,15 @@ public final class WallpaperController: @unchecked Sendable {
     public func togglePlayPause() {
         if playbackCore.isPlaying {
             playbackCore.pause()
+            isManuallyPaused = true
             NotificationCenter.default.post(name: .wallpaperPlayPauseStateDidChange, object: false)
             AppLogger.shared.info("[CHATTER] User toggled playback to PAUSE")
         } else {
+            isManuallyPaused = false
             playbackCore.play()
             NotificationCenter.default.post(name: .wallpaperPlayPauseStateDidChange, object: true)
             AppLogger.shared.info("[CHATTER] User toggled playback to PLAY")
         }
     }
 }
+

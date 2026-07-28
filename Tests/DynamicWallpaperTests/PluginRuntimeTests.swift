@@ -9,7 +9,7 @@ public struct PluginRuntimeTests {
 
     private static func testPluginMetadataSerialization() {
         let metadata = PluginMetadata(
-            id: "com.antigravity.clock.minimal",
+            id: "tw.soda916.clock.minimal",
             name: "Minimalist Digital Clock",
             author: "Antigravity Team",
             type: .clock
@@ -25,7 +25,7 @@ public struct PluginRuntimeTests {
             fatalError("Failed to decode PluginMetadata")
         }
 
-        assert(decoded.id == "com.antigravity.clock.minimal", "ID should match")
+        assert(decoded.id == "tw.soda916.clock.minimal", "ID should match")
         assert(decoded.name == "Minimalist Digital Clock", "Name should match")
         assert(decoded.type == .clock, "Type should be .clock")
         print("✓ testPluginMetadataSerialization passed")

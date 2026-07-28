@@ -8,7 +8,7 @@ echo "Starting build process for Dynamic Wallpaper Engine..."
 # Directories
 PROJECT_DIR="/Users/dustlee/program/DynamicWallPaper"
 BUILD_DIR="$PROJECT_DIR/build"
-VERSION="0.1.0-alpha"
+VERSION="0.1.1"
 
 # Ensure script is run from project root or directories are created correctly
 mkdir -p "$PROJECT_DIR/scripts"
@@ -97,7 +97,7 @@ package_variant() {
     <key>CFBundleExecutable</key>
     <string>DynamicWallpaperEngine</string>
     <key>CFBundleIdentifier</key>
-    <string>com.antigravity.DynamicWallpaperEngine</string>
+    <string>tw.soda916.DynamicWallpaperEngine</string>
     <key>CFBundleName</key>
     <string>DynamicWallpaperEngine</string>
     <key>CFBundleDisplayName</key>

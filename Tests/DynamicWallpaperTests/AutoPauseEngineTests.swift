@@ -4,6 +4,7 @@ import DynamicWallpaperCore
 public struct AutoPauseEngineTests {
     public static func runAllTests() {
         testAutoPauseEngineInitialization()
+        testAutoPauseEngineToggle()
     }
 
     private static func testAutoPauseEngineInitialization() {
@@ -11,4 +12,14 @@ public struct AutoPauseEngineTests {
         assert(engine.isPaused == false, "AutoPauseEngine should start unpaused")
         print("✓ testAutoPauseEngineInitialization passed")
     }
+
+    private static func testAutoPauseEngineToggle() {
+        let engine = AutoPauseEngine.shared
+        engine.isEnabled = false
+        assert(engine.isPaused == false, "AutoPauseEngine should remain unpaused when disabled")
+        engine.evaluateAutoPauseConditions()
+        assert(engine.isPaused == false, "AutoPauseEngine evaluation when disabled should leave isPaused false")
+        print("✓ testAutoPauseEngineToggle passed")
+    }
 }
+

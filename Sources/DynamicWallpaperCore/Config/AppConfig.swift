@@ -1,8 +1,14 @@
 import Foundation
 
+public enum PlaybackMode: String, Codable, CaseIterable {
+    case single = "single"          // Repeat single video
+    case sequential = "sequential"  // Play sequentially through playlist
+    case random = "random"          // Play randomly through playlist
+}
+
 /// Application configuration structure supporting backward compatibility and JSON schema migration.
 public struct AppConfig: Codable, Equatable {
-    public static let currentSchemaVersion = 1
+    public static let currentSchemaVersion = 2
 
     public var schemaVersion: Int
     public var hideDockIcon: Bool
@@ -15,6 +21,11 @@ public struct AppConfig: Codable, Equatable {
     public var autoPauseOnStageManager: Bool
     public var autoPauseOnFullscreen: Bool
     public var wakeUpAction: WakeUpAction
+    public var isAudioDucked: Bool
+    public var lastWallpaperPath: String?
+    public var playlistPaths: [String]
+    public var playbackMode: PlaybackMode
+    public var playlistIndex: Int
 
     public enum WakeUpAction: String, Codable {
         case restart
@@ -32,7 +43,12 @@ public struct AppConfig: Codable, Equatable {
         autoPauseOnLaunchpad: Bool = true,
         autoPauseOnStageManager: Bool = true,
         autoPauseOnFullscreen: Bool = true,
-        wakeUpAction: WakeUpAction = .resume
+        wakeUpAction: WakeUpAction = .resume,
+        isAudioDucked: Bool = false,
+        lastWallpaperPath: String? = nil,
+        playlistPaths: [String] = [],
+        playbackMode: PlaybackMode = .single,
+        playlistIndex: Int = 0
     ) {
         self.schemaVersion = schemaVersion
         self.hideDockIcon = hideDockIcon
@@ -45,6 +61,31 @@ public struct AppConfig: Codable, Equatable {
         self.autoPauseOnStageManager = autoPauseOnStageManager
         self.autoPauseOnFullscreen = autoPauseOnFullscreen
         self.wakeUpAction = wakeUpAction
+        self.isAudioDucked = isAudioDucked
+        self.lastWallpaperPath = lastWallpaperPath
+        self.playlistPaths = playlistPaths
+        self.playbackMode = playbackMode
+        self.playlistIndex = playlistIndex
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.schemaVersion = try container.decodeIfPresent(Int.self, forKey: .schemaVersion) ?? 1
+        self.hideDockIcon = try container.decodeIfPresent(Bool.self, forKey: .hideDockIcon) ?? true
+        self.launchAtLogin = try container.decodeIfPresent(Bool.self, forKey: .launchAtLogin) ?? false
+        self.loginDelaySeconds = try container.decodeIfPresent(Int.self, forKey: .loginDelaySeconds) ?? 30
+        self.defaultVolume = try container.decodeIfPresent(Float.self, forKey: .defaultVolume) ?? 1.0
+        self.isMuted = try container.decodeIfPresent(Bool.self, forKey: .isMuted) ?? false
+        self.autoPauseOnMissionControl = try container.decodeIfPresent(Bool.self, forKey: .autoPauseOnMissionControl) ?? true
+        self.autoPauseOnLaunchpad = try container.decodeIfPresent(Bool.self, forKey: .autoPauseOnLaunchpad) ?? true
+        self.autoPauseOnStageManager = try container.decodeIfPresent(Bool.self, forKey: .autoPauseOnStageManager) ?? true
+        self.autoPauseOnFullscreen = try container.decodeIfPresent(Bool.self, forKey: .autoPauseOnFullscreen) ?? true
+        self.wakeUpAction = try container.decodeIfPresent(WakeUpAction.self, forKey: .wakeUpAction) ?? .resume
+        self.isAudioDucked = try container.decodeIfPresent(Bool.self, forKey: .isAudioDucked) ?? false
+        self.lastWallpaperPath = try container.decodeIfPresent(String.self, forKey: .lastWallpaperPath)
+        self.playlistPaths = try container.decodeIfPresent([String].self, forKey: .playlistPaths) ?? []
+        self.playbackMode = try container.decodeIfPresent(PlaybackMode.self, forKey: .playbackMode) ?? .single
+        self.playlistIndex = try container.decodeIfPresent(Int.self, forKey: .playlistIndex) ?? 0
     }
 
     /// Result enum when loading configuration files to handle schema version mismatches without crashing.
@@ -78,3 +119,4 @@ public struct AppConfig: Codable, Equatable {
         try data.write(to: url, options: .atomic)
     }
 }
+
