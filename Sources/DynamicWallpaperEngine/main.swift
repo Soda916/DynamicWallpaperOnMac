@@ -81,6 +81,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 if let idx = self?.config.playlistIndex {
                     WallpaperController.shared.playIndex(idx)
                 }
+            }
+        }
+
         // Trigger asynchronous update check
         if config.autoCheckUpdates {
             UpdateChecker.shared.checkForUpdates()
