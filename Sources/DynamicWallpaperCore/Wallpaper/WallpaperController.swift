@@ -162,22 +162,32 @@ public final class WallpaperController: @unchecked Sendable {
         importAndApplyWallpaper(from: targetURL)
     }
 
-    public func importAndApplyWallpaper(from url: URL, completion: ((Result<URL, Error>) -> Void)? = nil) {
-        AppLogger.shared.info("[CHATTER] WallpaperController: Received user request to import wallpaper: \(url.path)")
+    public func importAndApplyWallpaper(from url: URL, storageMode: MediaStorageMode = .symlink, completion: ((Result<URL, Error>) -> Void)? = nil) {
+        AppLogger.shared.info("[CHATTER] WallpaperController: Received user request to import wallpaper: \(url.path) [StorageMode: \(storageMode.rawValue)]")
+
+        // Centralize media storage under ~/.dynamicwallpaper/media/
+        let effectiveURL: URL
+        switch MediaStorageManager.shared.processImportedMedia(from: url, mode: storageMode) {
+        case .success(let targetURL):
+            effectiveURL = targetURL
+        case .failure(let error):
+            AppLogger.shared.error("[CHATTER] Media centralization failed: \(error.localizedDescription), using original path.")
+            effectiveURL = url
+        }
 
         // Automatically maintain in playlist if not present
-        if !playlist.contains(where: { $0.path == url.path }) {
-            playlist.append(url)
+        if !playlist.contains(where: { $0.path == effectiveURL.path }) {
+            playlist.append(effectiveURL)
             currentIndex = playlist.count - 1
             NotificationCenter.default.post(name: .wallpaperPlaylistDidChange, object: self.playlist)
-        } else if let idx = playlist.firstIndex(where: { $0.path == url.path }) {
+        } else if let idx = playlist.firstIndex(where: { $0.path == effectiveURL.path }) {
             currentIndex = idx
         }
 
         let fileManager = FileManager.default
-        guard fileManager.fileExists(atPath: url.path) else {
-            let err = NSError(domain: "WallpaperController", code: 404, userInfo: [NSLocalizedDescriptionKey: "File does not exist at path: \(url.path)"])
-            AppLogger.shared.error("[CHATTER] Target wallpaper file is missing at \(url.path)")
+        guard fileManager.fileExists(atPath: effectiveURL.path) else {
+            let err = NSError(domain: "WallpaperController", code: 404, userInfo: [NSLocalizedDescriptionKey: "File does not exist at path: \(effectiveURL.path)"])
+            AppLogger.shared.error("[CHATTER] Target wallpaper file is missing at \(effectiveURL.path)")
             completion?(.failure(err))
             return
         }

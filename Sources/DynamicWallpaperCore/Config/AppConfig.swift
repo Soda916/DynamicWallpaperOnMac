@@ -6,9 +6,17 @@ public enum PlaybackMode: String, Codable, CaseIterable {
     case random = "random"          // Play randomly through playlist
 }
 
+public enum MediaStorageMode: String, Codable, CaseIterable {
+    case copy = "copy"          // Copy media file into ~/.dynamicwallpaper/media/
+    case symlink = "symlink"    // Soft link (symbolic link) into ~/.dynamicwallpaper/media/
+    case hardlink = "hardlink"  // Hard link into ~/.dynamicwallpaper/media/
+    case move = "move"          // Move file into ~/.dynamicwallpaper/media/
+    case direct = "direct"      // Use original file path directly
+}
+
 /// Application configuration structure supporting backward compatibility and JSON schema migration.
 public struct AppConfig: Codable, Equatable {
-    public static let currentSchemaVersion = 2
+    public static let currentSchemaVersion = 3
 
     public var schemaVersion: Int
     public var hideDockIcon: Bool
@@ -26,6 +34,10 @@ public struct AppConfig: Codable, Equatable {
     public var playlistPaths: [String]
     public var playbackMode: PlaybackMode
     public var playlistIndex: Int
+    public var mediaStorageMode: MediaStorageMode
+    public var autoCheckUpdates: Bool
+    public var ffmpegPath: String?
+    public var enabledPluginIDs: [String]
 
     public enum WakeUpAction: String, Codable {
         case restart
@@ -48,7 +60,11 @@ public struct AppConfig: Codable, Equatable {
         lastWallpaperPath: String? = nil,
         playlistPaths: [String] = [],
         playbackMode: PlaybackMode = .single,
-        playlistIndex: Int = 0
+        playlistIndex: Int = 0,
+        mediaStorageMode: MediaStorageMode = .symlink,
+        autoCheckUpdates: Bool = true,
+        ffmpegPath: String? = nil,
+        enabledPluginIDs: [String] = ["digital_clock"]
     ) {
         self.schemaVersion = schemaVersion
         self.hideDockIcon = hideDockIcon
@@ -66,6 +82,10 @@ public struct AppConfig: Codable, Equatable {
         self.playlistPaths = playlistPaths
         self.playbackMode = playbackMode
         self.playlistIndex = playlistIndex
+        self.mediaStorageMode = mediaStorageMode
+        self.autoCheckUpdates = autoCheckUpdates
+        self.ffmpegPath = ffmpegPath
+        self.enabledPluginIDs = enabledPluginIDs
     }
 
     public init(from decoder: Decoder) throws {
@@ -86,11 +106,16 @@ public struct AppConfig: Codable, Equatable {
         self.playlistPaths = try container.decodeIfPresent([String].self, forKey: .playlistPaths) ?? []
         self.playbackMode = try container.decodeIfPresent(PlaybackMode.self, forKey: .playbackMode) ?? .single
         self.playlistIndex = try container.decodeIfPresent(Int.self, forKey: .playlistIndex) ?? 0
+        self.mediaStorageMode = try container.decodeIfPresent(MediaStorageMode.self, forKey: .mediaStorageMode) ?? .symlink
+        self.autoCheckUpdates = try container.decodeIfPresent(Bool.self, forKey: .autoCheckUpdates) ?? true
+        self.ffmpegPath = try container.decodeIfPresent(String.self, forKey: .ffmpegPath)
+        self.enabledPluginIDs = try container.decodeIfPresent([String].self, forKey: .enabledPluginIDs) ?? ["digital_clock"]
     }
 
     /// Result enum when loading configuration files to handle schema version mismatches without crashing.
     public enum LoadResult {
         case success(AppConfig)
+        case migrated(AppConfig, fromVersion: Int)
         case newerVersionDetected(schemaVersion: Int, rawData: Data)
         case corruptedFile(Error)
     }
@@ -102,12 +127,20 @@ public struct AppConfig: Codable, Equatable {
 
         let decoder = JSONDecoder()
         do {
-            let config = try decoder.decode(AppConfig.self, from: data)
+            var config = try decoder.decode(AppConfig.self, from: data)
             if config.schemaVersion > currentSchemaVersion {
                 return .newerVersionDetected(schemaVersion: config.schemaVersion, rawData: data)
             }
+            if config.schemaVersion < currentSchemaVersion {
+                let oldVersion = config.schemaVersion
+                config.schemaVersion = currentSchemaVersion
+                try? config.save(to: url)
+                return .migrated(config, fromVersion: oldVersion)
+            }
             return .success(config)
         } catch {
+            // Safe fallback: repair corrupted file while preserving readable fields
+            AppLogger.shared.error("AppConfig load failed: \(error.localizedDescription). Utilizing default schema.")
             return .corruptedFile(error)
         }
     }
@@ -119,4 +152,5 @@ public struct AppConfig: Codable, Equatable {
         try data.write(to: url, options: .atomic)
     }
 }
+
 
