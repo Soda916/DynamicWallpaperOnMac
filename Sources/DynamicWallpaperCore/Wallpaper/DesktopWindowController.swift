@@ -1,10 +1,13 @@
 import AppKit
 import AVFoundation
+import WebKit
 
-/// Manages a borderless, non-activating desktop layer window for playing wallpaper media on a specific NSScreen.
+/// Manages a borderless, non-activating desktop layer window for playing wallpaper media on a specific NSScreen,
+/// with integrated WebKit overlay for rendering interactive JS plugins & desktop widgets.
 public final class DesktopWindowController: NSWindowController {
     public let targetScreen: NSScreen
     private var playerLayer: AVPlayerLayer?
+    private var webOverlayView: WKWebView?
 
     public init(screen: NSScreen) {
         self.targetScreen = screen
@@ -19,6 +22,7 @@ public final class DesktopWindowController: NSWindowController {
         
         super.init(window: window)
         setupWindowProperties(window)
+        setupPluginOverlay()
     }
 
     required init?(coder: NSCoder) {
@@ -58,10 +62,41 @@ public final class DesktopWindowController: NSWindowController {
         newPlayerLayer.videoGravity = .resizeAspectFill
         newPlayerLayer.autoresizingMask = [.layerWidthSizable, .layerHeightSizable]
 
-        layer.sublayers?.forEach { $0.removeFromSuperlayer() }
-        layer.addSublayer(newPlayerLayer)
+        // Remove existing video player sublayers while retaining webOverlayView subview
+        layer.sublayers?.filter { $0 is AVPlayerLayer }.forEach { $0.removeFromSuperlayer() }
+        layer.insertSublayer(newPlayerLayer, at: 0)
         self.playerLayer = newPlayerLayer
 
         window.orderFrontRegardless()
     }
+
+    /// Load transparent WebKit overlay for running active JS plugins (clock/widget/overlay)
+    public func reloadPluginOverlay() {
+        guard let contentView = window?.contentView else { return }
+        
+        if webOverlayView == nil {
+            let config = WKWebViewConfiguration()
+            config.setValue(false, forKey: "drawsBackground")
+            
+            let webView = WKWebView(frame: contentView.bounds, configuration: config)
+            webView.autoresizingMask = [.width, .height]
+            webView.setValue(true, forKey: "drawsTransparentBackground")
+            webView.isOpaque = false
+            
+            contentView.addSubview(webView, positioned: .above, relativeTo: nil)
+            self.webOverlayView = webView
+        }
+
+        if let clockHTML = PluginManager.shared.getPluginHTML(for: "digital_clock") {
+            webOverlayView?.loadHTMLString(clockHTML, baseURL: PluginManager.shared.pluginsDirectory.appendingPathComponent("digital_clock"))
+            AppLogger.shared.info("[DESKTOP-WINDOW] Loaded plugin overlay into desktop layer.")
+        }
+    }
+
+    private func setupPluginOverlay() {
+        DispatchQueue.main.async { [weak self] in
+            self?.reloadPluginOverlay()
+        }
+    }
 }
+
