@@ -81,7 +81,8 @@ public final class DesktopWindowController: NSWindowController {
             let webView = WKWebView(frame: contentView.bounds, configuration: config)
             webView.autoresizingMask = [.width, .height]
             webView.setValue(true, forKey: "drawsTransparentBackground")
-            webView.isOpaque = false
+            webView.wantsLayer = true
+            webView.layer?.isOpaque = false
             
             contentView.addSubview(webView, positioned: .above, relativeTo: nil)
             self.webOverlayView = webView
