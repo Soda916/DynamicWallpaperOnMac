@@ -97,7 +97,8 @@ public final class WallpaperController: @unchecked Sendable {
 
     public func addToPlaylist(_ urls: [URL]) {
         for url in urls {
-            if !playlist.contains(where: { $0.path == url.path }) {
+            let resolvedPath = url.resolvingSymlinksInPath().standardized.path
+            if !playlist.contains(where: { $0.resolvingSymlinksInPath().standardized.path == resolvedPath }) {
                 playlist.append(url)
             }
         }
@@ -175,13 +176,22 @@ public final class WallpaperController: @unchecked Sendable {
             effectiveURL = url
         }
 
-        // Automatically maintain in playlist if not present
-        if !playlist.contains(where: { $0.path == effectiveURL.path }) {
+        let effectiveResolvedPath = effectiveURL.resolvingSymlinksInPath().standardized.path
+        let sourceResolvedPath = url.resolvingSymlinksInPath().standardized.path
+
+        // Check if item already exists in playlist by resolved path or filename
+        if let existingIdx = playlist.firstIndex(where: {
+            let itemResolvedPath = $0.resolvingSymlinksInPath().standardized.path
+            return itemResolvedPath == effectiveResolvedPath || itemResolvedPath == sourceResolvedPath || $0.lastPathComponent == effectiveURL.lastPathComponent
+        }) {
+            // Update playlist entry to use normalized effectiveURL and jump to existing index
+            playlist[existingIdx] = effectiveURL
+            currentIndex = existingIdx
+            NotificationCenter.default.post(name: .wallpaperPlaylistDidChange, object: self.playlist)
+        } else {
             playlist.append(effectiveURL)
             currentIndex = playlist.count - 1
             NotificationCenter.default.post(name: .wallpaperPlaylistDidChange, object: self.playlist)
-        } else if let idx = playlist.firstIndex(where: { $0.path == effectiveURL.path }) {
-            currentIndex = idx
         }
 
         let fileManager = FileManager.default
