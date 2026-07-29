@@ -30,6 +30,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case .success(let loadedConfig):
             self.config = loadedConfig
             AppLogger.shared.info("[CHATTER] Configuration loaded successfully.")
+        case .migrated(let loadedConfig, let fromVersion):
+            self.config = loadedConfig
+            AppLogger.shared.info("[CHATTER] Configuration migrated successfully from Schema v\(fromVersion) -> v\(AppConfig.currentSchemaVersion).")
         case .newerVersionDetected(let version, _):
             AppLogger.shared.info("[CHATTER] Newer configuration version detected (\(version)). Using defaults.")
         case .corruptedFile(let error):
