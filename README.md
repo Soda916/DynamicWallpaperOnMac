@@ -4,7 +4,7 @@
 
 [![macOS Sonoma+](https://img.shields.io/badge/macOS-14.0%2B%20Sonoma-blue.svg?style=flat&logo=apple)](https://www.apple.com/macos/)
 [![Universal Binary](https://img.shields.io/badge/Architecture-Universal%20(Apple%20Silicon%20%2B%20Intel)-brightgreen.svg)](https://developer.apple.com/documentation/apple-silicon/)
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 [![CI Build](https://github.com/your-org/DynamicWallpaperEngine/actions/workflows/ci.yml/badge.svg)](https://github.com/your-org/DynamicWallpaperEngine/actions)
 
 **DynamicWallpaperEngine** is a high-performance, low-resource, extensible, open-source macOS native live wallpaper runtime and plugin platform. Built strictly with Swift, AppKit, SwiftUI, and Apple Native VideoToolbox hardware decoding, it offers an exceptionally smooth desktop live wallpaper experience without sacrificing battery life or system performance.
@@ -91,9 +91,15 @@ chmod +x scripts/build_app.sh
 
 ---
 
-## 📄 License & Community
+## 📄 License & Commercial Licensing
 
-Distributed under the **Apache License 2.0**. See [`LICENSE`](LICENSE) for details.
+This project is dual-licensed under the **GNU General Public License v3 (GPL v3)** and a **Commercial License**.
+
+- **Open Source Use**: Free to use, modify, and distribute under the terms of [`GPL v3`](LICENSE).
+- **Commercial Licensing**: If you plan to use or integrate this project in proprietary/commercial products without complying with GPL v3 terms, you must acquire a Commercial License:
+  - **Commercial Contact Email**: `soda916ongithub+DynamicWallpaperBusiness@gmail.com`
+
+See [`LICENSE`](LICENSE) for complete licensing terms.
 
 - 🤝 **Contributing**: Read [`CONTRIBUTING.md`](CONTRIBUTING.md) to get started.
 - 📜 **Code of Conduct**: See [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md).

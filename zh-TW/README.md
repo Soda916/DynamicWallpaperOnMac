@@ -4,7 +4,7 @@
 
 [![macOS Sonoma+](https://img.shields.io/badge/macOS-14.0%2B%20Sonoma-blue.svg?style=flat&logo=apple)](https://www.apple.com/macos/)
 [![Universal Binary](https://img.shields.io/badge/Architecture-Universal%20(Apple%20Silicon%20%2B%20Intel)-brightgreen.svg)](https://developer.apple.com/documentation/apple-silicon/)
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](../LICENSE)
 [![CI Build](https://github.com/your-org/DynamicWallpaperEngine/actions/workflows/ci.yml/badge.svg)](https://github.com/your-org/DynamicWallpaperEngine/actions)
 
 **DynamicWallpaperEngine** 是一個高效能、低資源消耗、可擴展且開源的 macOS 原生動態桌布執行階段與外掛平台。本專案嚴格使用 Swift、AppKit、SwiftUI 以及 Apple 原生的 VideoToolbox 硬體解碼進行開發，能在不犧牲電池續航力或系統效能的情況下，提供極致流暢的桌面動態桌布體驗。
@@ -91,9 +91,15 @@ chmod +x scripts/build_app.sh
 
 ---
 
-## 📄 授權與社群
+## 📄 授權條款與商業授權
 
-基於 **Apache License 2.0** 散佈。詳情請見 [`LICENSE`](LICENSE)。
+本專案採用 **GNU General Public License v3 (GPL v3)** 與 **商業授權 (Commercial License)** 雙重授權模式：
+
+- **開源免費使用**：在遵守 [`GPL v3`](../LICENSE) 條款的前提下，個人、學生與社群皆可免費使用、修改與散佈。
+- **商業授權申請**：若公司企業需要在不遵守 GPL v3 源碼公開條款的情況下整合或進行商業專有產品發佈，必須申請商業授權：
+  - **商業授權聯繫 Email**：`soda916ongithub+DynamicWallpaperBusiness@gmail.com`
+
+詳細條款請參閱 [`LICENSE`](../LICENSE)。
 
 - 🤝 **參與貢獻**：請閱讀 [`CONTRIBUTING.md`](CONTRIBUTING.md) 以開始貢獻。
 - 📜 **行為準則**：請見 [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md)。
