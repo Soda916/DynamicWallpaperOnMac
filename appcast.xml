@@ -20,8 +20,28 @@
             <sparkle:releaseNotesLink>https://github.com/Soda916/DynamicWallpaperOnMac/releases/tag/v0.1.3-alpha</sparkle:releaseNotesLink>
             <pubDate>Mon, 03 Aug 2026 00:12:00 +0800</pubDate>
             <enclosure url="https://github.com/Soda916/DynamicWallpaperOnMac/releases/download/v0.1.3-alpha/DynamicWallpaperEngine-v0.1.3-alpha-macOS-Universal.zip"
-                       sparkle:version="0.1.3-alpha"
+                       sparkle:version="0.1.3"
                        sparkle:shortVersionString="0.1.3-alpha"
+                       length="0"
+                       type="application/octet-stream" />
+        </item>
+        <item>
+            <title>DynamicWallpaperEngine v0.1.2-alpha</title>
+            <description><![CDATA[
+<h2>✨ DynamicWallpaperEngine v0.1.2-alpha 正式發布</h2>
+<ul>
+  <li><b>隱藏目錄集中化媒體庫 (.dynamicwallpaper/media)</b>：匯入桌布自動整理，支援 symlink、hardlink、copy、move、direct 5 種模式。</li>
+  <li><b>原生 FFmpeg 管理器</b>：動態偵測系統環境 PATH 及 Homebrew，非侵入式安裝提醒。</li>
+  <li><b>JavaScript 插件引擎與 WebKit 桌面層 overlay</b>：內建微光玻璃擬物 Digital Clock 桌面元件。</li>
+  <li><b>Sparkle 自動更新框架整合</b>：支援原生無感背景與選單手動檢查更新。</li>
+  <li><b>極致低資源 AppLogger 日誌引擎優化</b>：徹底修復 101% CPU 負載與 1.6GB 磁碟寫入問題。</li>
+</ul>
+            ]]></description>
+            <sparkle:releaseNotesLink>https://github.com/Soda916/DynamicWallpaperOnMac/releases/tag/v0.1.2-alpha</sparkle:releaseNotesLink>
+            <pubDate>Wed, 29 Jul 2026 07:00:00 +0800</pubDate>
+            <enclosure url="https://github.com/Soda916/DynamicWallpaperOnMac/releases/download/v0.1.2-alpha/DynamicWallpaperEngine-v0.1.2-alpha.zip"
+                       sparkle:version="0.1.2"
+                       sparkle:shortVersionString="0.1.2-alpha"
                        length="0"
                        type="application/octet-stream" />
         </item>
