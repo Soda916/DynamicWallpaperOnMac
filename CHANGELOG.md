@@ -9,7 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.1.3-alpha] - 2026-08-02
 
-### Fixed & Refactored
+### Added & Refactored
+- **Native Launch at Login (`LaunchAtLoginManager`)**:
+  - Implemented 100% Apple native `SMAppService.mainApp` API (macOS 13.0+ ServiceManagement).
+  - Added "Launch at Login" menu toggle in status bar menu with automatic preference persistence.
 - **Apple Silicon (M1/M2/M3/M4) Code Signing Fix (`build_app.sh`)**:
   - Automatically executes deep ad-hoc code re-signing (`codesign --force --deep -s -`) after bundle assembly.
   - Resolves Gatekeeper "App is damaged and can't be opened" launch failure on ARM64 binaries caused by invalid Mach-O signature seals.

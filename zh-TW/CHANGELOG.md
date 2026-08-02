@@ -9,7 +9,10 @@
 
 ## [0.1.3-alpha] - 2026-08-02
 
-### 錯誤修復與重構 (Fixed & Refactored)
+### 新增與重構 (Added & Refactored)
+- **原生開機自動啟動功能 (`LaunchAtLoginManager`)**：
+  - 採用 100% Apple 原生 `SMAppService.mainApp` API (macOS 13.0+ ServiceManagement)。
+  - 於選單列 (Menu Bar) 加入「Launch at Login (開機自動啟動)」切換選項並自動儲存偏好。
 - **Apple Silicon (M1/M2/M3/M4) 簽署修復 (`build_app.sh`)**：
   - 打包完成後自動執行 `codesign --force --deep -s -` 深度 Ad-hoc 簽署。
   - 徹底解決 ARM64 二進位檔因簽署失效導致 Gatekeeper 攔截「檔案已毀損，無法開啟」的問題。

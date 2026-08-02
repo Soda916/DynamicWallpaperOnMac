@@ -13,6 +13,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var toggleMuteMenuItem: NSMenuItem?
     private var autoPauseMenuItem: NSMenuItem?
     private var audioDuckingMenuItem: NSMenuItem?
+    private var launchAtLoginMenuItem: NSMenuItem?
 
     private let configURL: URL = {
         let fm = FileManager.default
@@ -54,6 +55,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         WallpaperController.shared.setMuted(config.isMuted)
         WallpaperController.shared.setAudioDucked(config.isAudioDucked)
         WallpaperController.shared.setPlaybackMode(config.playbackMode)
+        LaunchAtLoginManager.shared.syncWithConfig(config.launchAtLogin)
         
         let restoredPlaylist = config.playlistPaths.map { URL(fileURLWithPath: $0) }
         if !restoredPlaylist.isEmpty {
@@ -191,6 +193,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(autoPauseItem)
         updateAutoPauseMenuItemState()
 
+        let launchAtLoginItem = NSMenuItem(title: "Launch at Login", action: #selector(toggleLaunchAtLogin), keyEquivalent: "l")
+        launchAtLoginItem.state = config.launchAtLogin ? .on : .off
+        launchAtLoginMenuItem = launchAtLoginItem
+        menu.addItem(launchAtLoginItem)
+
         menu.addItem(NSMenuItem.separator())
         menu.addItem(NSMenuItem(title: "Open Dashboard", action: #selector(openDashboard), keyEquivalent: "o"))
         menu.addItem(NSMenuItem(title: "Check for Updates...", action: #selector(checkForUpdatesClicked), keyEquivalent: "u"))
@@ -297,6 +304,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func toggleAutoPause() {
         let newState = !config.autoPauseOnFullscreen
         WallpaperController.shared.setAutoPauseEnabled(newState)
+    }
+
+    @objc private func toggleLaunchAtLogin() {
+        let newState = !config.launchAtLogin
+        let success = LaunchAtLoginManager.shared.setEnabled(newState)
+        if success || !newState {
+            config.launchAtLogin = newState
+            launchAtLoginMenuItem?.state = newState ? .on : .off
+            saveConfig()
+            AppLogger.shared.info("[CHATTER] Toggled Launch at Login: \(newState)")
+        } else {
+            launchAtLoginMenuItem?.state = config.launchAtLogin ? .on : .off
+        }
     }
 
     @objc private func openDashboard() {
