@@ -7,6 +7,27 @@
 格式基於 [Keep a Changelog](https://keepachangelog.com/zh-TW/1.0.0/)，
 且本專案遵守 [語意化版本控制 (Semantic Versioning)](https://semver.org/spec/v2.0.0.html)。
 
+## [0.1.3-alpha] - 2026-08-02
+
+### 錯誤修復與重構 (Fixed & Refactored)
+- **Apple Silicon (M1/M2/M3/M4) 簽署修復 (`build_app.sh`)**：
+  - 打包完成後自動執行 `codesign --force --deep -s -` 深度 Ad-hoc 簽署。
+  - 徹底解決 ARM64 二進位檔因簽署失效導致 Gatekeeper 攔截「檔案已毀損，無法開啟」的問題。
+- **方案 A 原生 SF Symbols 選單列圖示 (`main.swift`)**：
+  - 採用高對比、極致清晰之 Apple 原生 SF Symbols 選單列圖示：
+    - **啟用 Autoplay + 播放中**：`play.rectangle.fill`
+    - **啟用 Autoplay + 自動暫停/手動暫停**：`pause.rectangle.fill`
+    - **未啟用 Autoplay**：`play.laptopcomputer`
+- **啟動即時自動暫停檢測 (`WallpaperController.swift`)**：
+  - 桌布啟動時優先評估螢幕視窗佈局，避免在最大化/全螢幕視窗下仍播放桌布影片。
+- **睡眠與開機抗卡頓機制 (`WallpaperController.swift`)**：
+  - 監聽 `willSleepNotification` 於睡眠前優雅暫停播放。
+  - 監聽 `didWakeNotification` 並延遲 3.0 秒後才恢復拓撲檢測與自動暫停，防止開機與喚醒時背景撞車卡頓。
+- **macOS 14 Sonoma 選單偏離修正 (`main.swift`)**：
+  - 替換廢棄之 `statusItem.popUpMenu`，改用定點錨定 `menu.popUp(...)` 修正選單脫離問題。
+- **預設偏好設定更新 (`AppConfig.swift`)**：
+  - `autoPauseOnFullscreen` 預設改為 `false`，`isAudioDucked` 預設改為 `true` (5% 避音背景音量)。
+
 ## [0.1.2-alpha] - 2026-07-29
 
 > 💡 **已知問題與臨時對策**：

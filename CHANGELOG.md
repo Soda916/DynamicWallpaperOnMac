@@ -7,6 +7,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.3-alpha] - 2026-08-02
+
+### Fixed & Refactored
+- **Apple Silicon (M1/M2/M3/M4) Code Signing Fix (`build_app.sh`)**:
+  - Automatically executes deep ad-hoc code re-signing (`codesign --force --deep -s -`) after bundle assembly.
+  - Resolves Gatekeeper "App is damaged and can't be opened" launch failure on ARM64 binaries caused by invalid Mach-O signature seals.
+- **Option A Native SF Symbols for Status Bar (`main.swift`)**:
+  - Implemented high-contrast, crystal-clear Apple native SF Symbols for status bar icon:
+    - **Active & Playing**: `play.rectangle.fill`
+    - **Active & Auto-Paused / Paused**: `pause.rectangle.fill`
+    - **Disabled**: `play.laptopcomputer`
+- **Instant Auto-Pause at Launch (`WallpaperController.swift`)**:
+  - Evaluates window topology prior to playback start, ensuring video wallpaper immediately pauses if launched beneath a fullscreen/maximized window.
+- **System Boot & Sleep/Wake Anti-Stutter (`WallpaperController.swift`)**:
+  - Listens to `willSleepNotification` to gracefully pause playback before system sleep.
+  - Delayed restoration (3.0s delay after `didWakeNotification`) to prevent system boot/wake resource contention.
+- **macOS 14 Sonoma Menu Detachment Fix (`main.swift`)**:
+  - Replaced deprecated `statusItem.popUpMenu` with anchored `menu.popUp(...)` to fix status menu detachment on macOS 14 Sonoma.
+- **Updated Default Preferences (`AppConfig.swift`)**:
+  - Set `autoPauseOnFullscreen` default to `false` and `isAudioDucked` default to `true` (5% volume).
+
 ## [0.1.2-alpha] - 2026-07-29
 
 > 💡 **Known Issue Workaround (已知問題與臨時對策)**:
