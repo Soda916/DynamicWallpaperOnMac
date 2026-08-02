@@ -29,5 +29,17 @@ Icon
 # Logs
 *.log
 
-# others
+# Temporary & Local Scratch Directories
 tmp_uploads/
+scratch/
+user_scratch/
+.scratch/
+
+# Ignore Media Files Dropped in Root
+/*.mp4
+/*.mov
+/*.mkv
+/*.avi
+/*.png
+/*.jpg
+/*.jpeg
