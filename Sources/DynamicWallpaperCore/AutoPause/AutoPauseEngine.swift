@@ -33,6 +33,12 @@ public final class AutoPauseEngine {
         AppLogger.shared.info("[AUTOPAUSE] Started monitoring all displays for fullscreen/maximized windows.")
         dumpScreenTopology()
         
+        // Immediate check and 0.5s delayed check to capture existing windows at launch
+        evaluateAutoPauseConditions()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+            self?.evaluateAutoPauseConditions()
+        }
+        
         timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
             self?.evaluateAutoPauseConditions()
         }

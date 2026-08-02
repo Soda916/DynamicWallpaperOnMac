@@ -54,9 +54,9 @@ public struct AppConfig: Codable, Equatable {
         autoPauseOnMissionControl: Bool = true,
         autoPauseOnLaunchpad: Bool = true,
         autoPauseOnStageManager: Bool = true,
-        autoPauseOnFullscreen: Bool = true,
+        autoPauseOnFullscreen: Bool = false,
         wakeUpAction: WakeUpAction = .resume,
-        isAudioDucked: Bool = false,
+        isAudioDucked: Bool = true,
         lastWallpaperPath: String? = nil,
         playlistPaths: [String] = [],
         playbackMode: PlaybackMode = .single,
@@ -99,9 +99,9 @@ public struct AppConfig: Codable, Equatable {
         self.autoPauseOnMissionControl = try container.decodeIfPresent(Bool.self, forKey: .autoPauseOnMissionControl) ?? true
         self.autoPauseOnLaunchpad = try container.decodeIfPresent(Bool.self, forKey: .autoPauseOnLaunchpad) ?? true
         self.autoPauseOnStageManager = try container.decodeIfPresent(Bool.self, forKey: .autoPauseOnStageManager) ?? true
-        self.autoPauseOnFullscreen = try container.decodeIfPresent(Bool.self, forKey: .autoPauseOnFullscreen) ?? true
+        self.autoPauseOnFullscreen = try container.decodeIfPresent(Bool.self, forKey: .autoPauseOnFullscreen) ?? false
         self.wakeUpAction = try container.decodeIfPresent(WakeUpAction.self, forKey: .wakeUpAction) ?? .resume
-        self.isAudioDucked = try container.decodeIfPresent(Bool.self, forKey: .isAudioDucked) ?? false
+        self.isAudioDucked = try container.decodeIfPresent(Bool.self, forKey: .isAudioDucked) ?? true
         self.lastWallpaperPath = try container.decodeIfPresent(String.self, forKey: .lastWallpaperPath)
         self.playlistPaths = try container.decodeIfPresent([String].self, forKey: .playlistPaths) ?? []
         self.playbackMode = try container.decodeIfPresent(PlaybackMode.self, forKey: .playbackMode) ?? .single

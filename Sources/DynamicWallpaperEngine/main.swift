@@ -121,16 +121,53 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    private func updateStatusItemIcon(isPlaying: Bool) {
+        let svgName = isPlaying ? "autoplay-playing" : "autoplay-paused"
+        var iconImage: NSImage?
+
+        if let url = Bundle.main.url(forResource: svgName, withExtension: "svg"),
+           let img = NSImage(contentsOf: url) {
+            iconImage = img
+        } else if let resourcePath = Bundle.main.resourcePath {
+            let svgURL = URL(fileURLWithPath: resourcePath).appendingPathComponent("\(svgName).svg")
+            if FileManager.default.fileExists(atPath: svgURL.path), let img = NSImage(contentsOf: svgURL) {
+                iconImage = img
+            }
+        }
+
+        if iconImage == nil {
+            let symbol = isPlaying ? "play.laptopcomputer" : "pause.laptopcomputer"
+            iconImage = NSImage(systemSymbolName: symbol, accessibilityDescription: "Dynamic Wallpaper Engine")
+        }
+
+        iconImage?.isTemplate = true
+        statusItem?.button?.image = iconImage
+    }
+
+    private func updateAutoPauseMenuItemState() {
+        let isEnabled = config.autoPauseOnFullscreen
+        let isPaused = WallpaperController.shared.autoPauseEngine.isPaused
+        
+        autoPauseMenuItem?.state = isEnabled ? .on : .off
+        if isEnabled {
+            if isPaused {
+                autoPauseMenuItem?.title = "Auto-Pause on Fullscreen (Auto-Paused)"
+            } else {
+                autoPauseMenuItem?.title = "Auto-Pause on Fullscreen (Active)"
+            }
+        } else {
+            autoPauseMenuItem?.title = "Auto-Pause on Fullscreen"
+        }
+    }
+
     private func setupStatusMenu() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         if let button = statusItem?.button {
-            let iconImage = NSImage(systemSymbolName: "play.laptopcomputer", accessibilityDescription: "Dynamic Wallpaper Engine")
-            iconImage?.isTemplate = true
-            button.image = iconImage
             button.sendAction(on: [.leftMouseUp, .rightMouseUp])
             button.action = #selector(statusItemClicked)
             button.target = self
         }
+        updateStatusItemIcon(isPlaying: WallpaperController.shared.playbackCore.isPlaying)
 
         let menu = NSMenu()
         menu.addItem(NSMenuItem(title: "Import Wallpaper...", action: #selector(chooseWallpaper), keyEquivalent: "i"))
@@ -149,9 +186,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(duckingItem)
         
         let autoPauseItem = NSMenuItem(title: "Auto-Pause on Fullscreen", action: #selector(toggleAutoPause), keyEquivalent: "a")
-        autoPauseItem.state = config.autoPauseOnFullscreen ? .on : .off
         autoPauseMenuItem = autoPauseItem
         menu.addItem(autoPauseItem)
+        updateAutoPauseMenuItemState()
 
         menu.addItem(NSMenuItem.separator())
         menu.addItem(NSMenuItem(title: "Open Dashboard", action: #selector(openDashboard), keyEquivalent: "o"))
@@ -176,13 +213,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         center.addObserver(forName: .wallpaperPlayPauseStateDidChange, object: nil, queue: .main) { [weak self] notif in
             if let isPlaying = notif.object as? Bool {
                 self?.togglePlayPauseMenuItem?.title = isPlaying ? "Pause Playback" : "Resume Playback"
+                self?.updateStatusItemIcon(isPlaying: isPlaying)
+                self?.updateAutoPauseMenuItemState()
+            }
+        }
+
+        center.addObserver(forName: .autoPausePauseStateDidChange, object: nil, queue: .main) { [weak self] notif in
+            if let isPaused = notif.object as? Bool {
+                self?.updateStatusItemIcon(isPlaying: !isPaused)
+                self?.updateAutoPauseMenuItemState()
             }
         }
 
         center.addObserver(forName: .wallpaperAutoPauseConfigDidChange, object: nil, queue: .main) { [weak self] notif in
             if let isEnabled = notif.object as? Bool {
                 self?.config.autoPauseOnFullscreen = isEnabled
-                self?.autoPauseMenuItem?.state = isEnabled ? .on : .off
+                self?.updateAutoPauseMenuItemState()
                 self?.saveConfig()
             }
         }
@@ -221,8 +267,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if isRightClick {
             openDashboard()
         } else {
-            if let menu = statusMenu {
-                statusItem?.popUpMenu(menu)
+            if let button = statusItem?.button, let menu = statusMenu {
+                menu.popUp(positioning: nil, at: NSPoint(x: 0, y: button.frame.height + 4), in: button)
             }
         }
     }

@@ -94,6 +94,14 @@ package_variant() {
     if [ -f "$PROJECT_DIR/AppIcon.icns" ]; then
         cp "$PROJECT_DIR/AppIcon.icns" "$RESOURCES_DIR/AppIcon.icns"
     fi
+
+    if [ -f "$PROJECT_DIR/autoplay-paused.svg" ]; then
+        cp "$PROJECT_DIR/autoplay-paused.svg" "$RESOURCES_DIR/autoplay-paused.svg"
+    fi
+
+    if [ -f "$PROJECT_DIR/autoplay-playing.svg" ]; then
+        cp "$PROJECT_DIR/autoplay-playing.svg" "$RESOURCES_DIR/autoplay-playing.svg"
+    fi
     
     install_name_tool -add_rpath "@executable_path/../Frameworks" "$MACOS_DIR/DynamicWallpaperEngine" 2>/dev/null || true
 

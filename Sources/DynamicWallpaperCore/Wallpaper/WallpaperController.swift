@@ -31,6 +31,32 @@ public final class WallpaperController: @unchecked Sendable {
     private init() {
         setupAutoPauseIntegration()
         setupPlaybackEndHook()
+        setupSleepWakeObservers()
+    }
+
+    private func setupSleepWakeObservers() {
+        let center = NSWorkspace.shared.notificationCenter
+        center.addObserver(forName: NSWorkspace.willSleepNotification, object: nil, queue: .main) { [weak self] _ in
+            AppLogger.shared.info("[SYSTEM-SLEEP] Mac going to sleep. Pausing desktop playback...")
+            self?.playbackCore.pause()
+            NotificationCenter.default.post(name: .wallpaperPlayPauseStateDidChange, object: false)
+        }
+
+        center.addObserver(forName: NSWorkspace.didWakeNotification, object: nil, queue: .main) { [weak self] _ in
+            AppLogger.shared.info("[SYSTEM-WAKE] Mac woke from sleep. Waiting 3.0s for graphics/display stabilization...")
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+                guard let self = self else { return }
+                AppLogger.shared.info("[SYSTEM-WAKE] Re-evaluating screen topology & auto-pause state after wake delay...")
+                self.displayManager.updateScreens(with: self.playbackCore.player)
+                self.autoPauseEngine.evaluateAutoPauseConditions()
+                if !self.isManuallyPaused && (!self.autoPauseEngine.isEnabled || !self.autoPauseEngine.isPaused) {
+                    if self.activeWallpaperURL != nil {
+                        self.playbackCore.play()
+                        NotificationCenter.default.post(name: .wallpaperPlayPauseStateDidChange, object: true)
+                    }
+                }
+            }
+        }
     }
 
     private func setupAutoPauseIntegration() {
@@ -263,9 +289,19 @@ public final class WallpaperController: @unchecked Sendable {
         self.isManuallyPaused = false
         playbackCore.loadVideo(url: url)
         displayManager.updateScreens(with: playbackCore.player)
-        playbackCore.play()
-        onWallpaperChanged?(url)
-        NotificationCenter.default.post(name: .wallpaperPlayPauseStateDidChange, object: true)
+
+        // Evaluate AutoPause BEFORE starting playback to prevent playing under existing fullscreen/maximized windows
+        autoPauseEngine.evaluateAutoPauseConditions()
+        if autoPauseEngine.isEnabled && autoPauseEngine.isPaused {
+            AppLogger.shared.info("[CHATTER] AutoPause is active at video load time. Pausing playback immediately.")
+            playbackCore.pause()
+            onWallpaperChanged?(url)
+            NotificationCenter.default.post(name: .wallpaperPlayPauseStateDidChange, object: false)
+        } else {
+            playbackCore.play()
+            onWallpaperChanged?(url)
+            NotificationCenter.default.post(name: .wallpaperPlayPauseStateDidChange, object: true)
+        }
         AppLogger.shared.info("[CHATTER] Successfully attached player to desktop layer. Active URL: \(url.path)")
     }
 
