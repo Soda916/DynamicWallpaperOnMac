@@ -121,10 +121,62 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    private func updateStatusItemIcon(isPlaying: Bool) {
-        let symbolName = isPlaying ? "play.laptopcomputer" : "laptopcomputer"
-        let iconImage = NSImage(systemSymbolName: symbolName, accessibilityDescription: "Dynamic Wallpaper Engine")
-        iconImage?.isTemplate = true
+    private func loadSVGIcon(named name: String) -> NSImage? {
+        let fm = FileManager.default
+        var svgURL: URL?
+
+        if let url = Bundle.main.url(forResource: name, withExtension: "svg") {
+            svgURL = url
+        } else if let resourcePath = Bundle.main.resourcePath {
+            let path = URL(fileURLWithPath: resourcePath).appendingPathComponent("\(name).svg")
+            if fm.fileExists(atPath: path.path) { svgURL = path }
+        }
+
+        if svgURL == nil {
+            let path = URL(fileURLWithPath: fm.currentDirectoryPath).appendingPathComponent("\(name).svg")
+            if fm.fileExists(atPath: path.path) { svgURL = path }
+        }
+
+        guard let targetURL = svgURL,
+              var svgString = try? String(contentsOf: targetURL, encoding: .utf8) else {
+            return nil
+        }
+
+        // Hide <g id="Notes"> artboard background so NSImage template mask renders crisp vector glyph
+        svgString = svgString.replacingOccurrences(of: "<g id=\"Notes\">", with: "<g id=\"Notes\" style=\"display:none;\">")
+        guard let data = svgString.data(using: .utf8), let img = NSImage(data: data) else {
+            return nil
+        }
+
+        img.size = NSSize(width: 18, height: 18)
+        img.isTemplate = true
+        return img
+    }
+
+    private func updateStatusItemIcon() {
+        let isAutoPauseEnabled = config.autoPauseOnFullscreen
+        let isAutoPaused = WallpaperController.shared.autoPauseEngine.isPaused
+        let isPlaying = WallpaperController.shared.playbackCore.isPlaying && !isAutoPaused
+
+        var iconImage: NSImage?
+
+        if isAutoPauseEnabled {
+            if isAutoPaused || !isPlaying {
+                // Rule 2: Autoplay (Auto-Pause) 啟用，但畫面因自動暫停停止播放的情況下 -> 使用 autoplay-paused.svg
+                iconImage = loadSVGIcon(named: "autoplay-paused")
+            } else {
+                // Rule 1: Autoplay (Auto-Pause) 啟用，且畫面播放中的情況下 -> 使用 autoplay-playing.svg
+                iconImage = loadSVGIcon(named: "autoplay-playing")
+            }
+        }
+
+        // Rule 3: Autoplay (Auto-Pause) 要是沒啟用 -> 直接使用原本的 icon (play.laptopcomputer / laptopcomputer)
+        if iconImage == nil {
+            let symbol = isPlaying ? "play.laptopcomputer" : "laptopcomputer"
+            iconImage = NSImage(systemSymbolName: symbol, accessibilityDescription: "Dynamic Wallpaper Engine")
+            iconImage?.isTemplate = true
+        }
+
         statusItem?.button?.image = iconImage
     }
 
@@ -151,7 +203,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             button.action = #selector(statusItemClicked)
             button.target = self
         }
-        updateStatusItemIcon(isPlaying: WallpaperController.shared.playbackCore.isPlaying)
+        updateStatusItemIcon()
 
         let menu = NSMenu()
         menu.addItem(NSMenuItem(title: "Import Wallpaper...", action: #selector(chooseWallpaper), keyEquivalent: "i"))
@@ -197,21 +249,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         center.addObserver(forName: .wallpaperPlayPauseStateDidChange, object: nil, queue: .main) { [weak self] notif in
             if let isPlaying = notif.object as? Bool {
                 self?.togglePlayPauseMenuItem?.title = isPlaying ? "Pause Playback" : "Resume Playback"
-                self?.updateStatusItemIcon(isPlaying: isPlaying)
+                self?.updateStatusItemIcon()
                 self?.updateAutoPauseMenuItemState()
             }
         }
 
-        center.addObserver(forName: .autoPausePauseStateDidChange, object: nil, queue: .main) { [weak self] notif in
-            if let isPaused = notif.object as? Bool {
-                self?.updateStatusItemIcon(isPlaying: !isPaused)
-                self?.updateAutoPauseMenuItemState()
-            }
+        center.addObserver(forName: .autoPausePauseStateDidChange, object: nil, queue: .main) { [weak self] _ in
+            self?.updateStatusItemIcon()
+            self?.updateAutoPauseMenuItemState()
         }
 
         center.addObserver(forName: .wallpaperAutoPauseConfigDidChange, object: nil, queue: .main) { [weak self] notif in
             if let isEnabled = notif.object as? Bool {
                 self?.config.autoPauseOnFullscreen = isEnabled
+                self?.updateStatusItemIcon()
                 self?.updateAutoPauseMenuItemState()
                 self?.saveConfig()
             }
