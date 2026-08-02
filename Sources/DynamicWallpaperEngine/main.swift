@@ -121,70 +121,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    private func loadSVGIcon(named name: String) -> NSImage? {
-        let fm = FileManager.default
-        var searchURLs: [URL] = []
-
-        if let url = Bundle.main.url(forResource: name, withExtension: "svg") {
-            searchURLs.append(url)
-        }
-        if let resourcePath = Bundle.main.resourcePath {
-            searchURLs.append(URL(fileURLWithPath: resourcePath).appendingPathComponent("\(name).svg"))
-        }
-        searchURLs.append(URL(fileURLWithPath: fm.currentDirectoryPath).appendingPathComponent("\(name).svg"))
-
-        // Source-relative project root (ensures `swift run` always finds SVGs)
-        let sourceRootDir = URL(fileURLWithPath: #file)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-            .appendingPathComponent("\(name).svg")
-        searchURLs.append(sourceRootDir)
-
-        var targetURL: URL?
-        for url in searchURLs {
-            if fm.fileExists(atPath: url.path) {
-                targetURL = url
-                break
-            }
-        }
-
-        guard let validURL = targetURL,
-              let data = try? Data(contentsOf: validURL),
-              let img = NSImage(data: data) else {
-            AppLogger.shared.error("[STATUS_BAR] Failed to load SVG icon: \(name).svg")
-            return nil
-        }
-
-        img.size = NSSize(width: 22, height: 16)
-        img.isTemplate = true
-        return img
-    }
-
     private func updateStatusItemIcon() {
         let isAutoPauseEnabled = config.autoPauseOnFullscreen
         let isAutoPaused = WallpaperController.shared.autoPauseEngine.isPaused
         let isPlaying = WallpaperController.shared.playbackCore.isPlaying && !isAutoPaused
 
-        var iconImage: NSImage?
-
+        let symbolName: String
         if isAutoPauseEnabled {
             if isAutoPaused || !isPlaying {
-                // Rule 2: Autoplay (Auto-Pause) 啟用，但畫面因自動暫停停止播放的情況下 -> 使用 autoplay-paused.svg
-                iconImage = loadSVGIcon(named: "autoplay-paused")
+                // Rule 2: Autoplay啟用，但畫面因自動暫停/手動暫停停止播放 -> 使用 pause.rectangle.fill
+                symbolName = "pause.rectangle.fill"
             } else {
-                // Rule 1: Autoplay (Auto-Pause) 啟用，且畫面播放中的情況下 -> 使用 autoplay-playing.svg
-                iconImage = loadSVGIcon(named: "autoplay-playing")
+                // Rule 1: Autoplay啟用，且畫面播放中 -> 使用 play.rectangle.fill
+                symbolName = "play.rectangle.fill"
             }
+        } else {
+            // Rule 3: Autoplay要是沒啟用 -> 直接使用原本的 icon (play.laptopcomputer)
+            symbolName = "play.laptopcomputer"
         }
 
-        // Rule 3: Autoplay (Auto-Pause) 要是沒啟用 -> 直接使用原本的 icon (play.laptopcomputer / laptopcomputer)
-        if iconImage == nil {
-            let symbol = isPlaying ? "play.laptopcomputer" : "laptopcomputer"
-            iconImage = NSImage(systemSymbolName: symbol, accessibilityDescription: "Dynamic Wallpaper Engine")
-            iconImage?.isTemplate = true
-        }
-
+        let iconImage = NSImage(systemSymbolName: symbolName, accessibilityDescription: "Dynamic Wallpaper Engine")
+        iconImage?.isTemplate = true
         statusItem?.button?.image = iconImage
     }
 
