@@ -138,17 +138,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         guard let targetURL = svgURL,
-              var svgString = try? String(contentsOf: targetURL, encoding: .utf8) else {
+              let data = try? Data(contentsOf: targetURL),
+              let img = NSImage(data: data) else {
             return nil
         }
 
-        // Hide <g id="Notes"> artboard background so NSImage template mask renders crisp vector glyph
-        svgString = svgString.replacingOccurrences(of: "<g id=\"Notes\">", with: "<g id=\"Notes\" style=\"display:none;\">")
-        guard let data = svgString.data(using: .utf8), let img = NSImage(data: data) else {
-            return nil
-        }
-
-        img.size = NSSize(width: 18, height: 18)
+        img.size = NSSize(width: 22, height: 16)
         img.isTemplate = true
         return img
     }
