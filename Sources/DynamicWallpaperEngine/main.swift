@@ -122,30 +122,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func updateStatusItemIcon(isPlaying: Bool) {
-        let svgName = isPlaying ? "autoplay-playing" : "autoplay-paused"
-        var iconImage: NSImage?
-
-        let fm = FileManager.default
-        let currentDirURL = URL(fileURLWithPath: fm.currentDirectoryPath).appendingPathComponent("\(svgName).svg")
-
-        if let url = Bundle.main.url(forResource: svgName, withExtension: "svg"),
-           let img = NSImage(contentsOf: url) {
-            iconImage = img
-        } else if let resourcePath = Bundle.main.resourcePath {
-            let svgURL = URL(fileURLWithPath: resourcePath).appendingPathComponent("\(svgName).svg")
-            if fm.fileExists(atPath: svgURL.path), let img = NSImage(contentsOf: svgURL) {
-                iconImage = img
-            }
-        } else if fm.fileExists(atPath: currentDirURL.path), let img = NSImage(contentsOf: currentDirURL) {
-            iconImage = img
-        }
-
-        if iconImage == nil {
-            let symbol = isPlaying ? "play.laptopcomputer" : "pause.fill"
-            iconImage = NSImage(systemSymbolName: symbol, accessibilityDescription: "Dynamic Wallpaper Engine")
-        }
-
-        iconImage?.size = NSSize(width: 18, height: 18)
+        let symbolName = isPlaying ? "play.laptopcomputer" : "laptopcomputer"
+        let iconImage = NSImage(systemSymbolName: symbolName, accessibilityDescription: "Dynamic Wallpaper Engine")
         iconImage?.isTemplate = true
         statusItem?.button?.image = iconImage
     }
