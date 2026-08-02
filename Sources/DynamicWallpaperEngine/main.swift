@@ -67,25 +67,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         setupStatusMenu()
         setupGlobalStateObservers()
 
-        // Load and apply last wallpaper or active playlist track
-        if let lastPath = config.lastWallpaperPath {
-            AppLogger.shared.info("[CHATTER] Restoring last wallpaper path: \(lastPath)")
-            let url = URL(fileURLWithPath: lastPath)
-            DispatchQueue.main.async {
+        // Load and apply last wallpaper or active playlist track with 3.0s boot delay to avoid startup resource contention
+        let bootDelay: Double = 3.0
+        AppLogger.shared.info("[BOOT] Waiting \(bootDelay)s for system startup and display topology stabilization...")
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + bootDelay) { [weak self] in
+            guard let self = self else { return }
+            if let lastPath = self.config.lastWallpaperPath {
+                AppLogger.shared.info("[BOOT] Restoring last wallpaper path: \(lastPath)")
+                let url = URL(fileURLWithPath: lastPath)
                 WallpaperController.shared.importAndApplyWallpaper(from: url) { result in
                     switch result {
                     case .success(let appliedURL):
-                        AppLogger.shared.info("[CHATTER] Restored last wallpaper successfully: \(appliedURL.path)")
+                        AppLogger.shared.info("[BOOT] Restored last wallpaper successfully: \(appliedURL.path)")
                     case .failure(let error):
-                        AppLogger.shared.error("[CHATTER] Failed to restore last wallpaper: \(error.localizedDescription)")
+                        AppLogger.shared.error("[BOOT] Failed to restore last wallpaper: \(error.localizedDescription)")
                     }
                 }
-            }
-        } else if !restoredPlaylist.isEmpty {
-            DispatchQueue.main.async { [weak self] in
-                if let idx = self?.config.playlistIndex {
-                    WallpaperController.shared.playIndex(idx)
-                }
+            } else if !restoredPlaylist.isEmpty {
+                let idx = self.config.playlistIndex
+                WallpaperController.shared.playIndex(idx)
             }
         }
 
