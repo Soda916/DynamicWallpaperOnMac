@@ -28,3 +28,6 @@ Icon
 
 # Logs
 *.log
+
+# others
+tmp_uploads/
