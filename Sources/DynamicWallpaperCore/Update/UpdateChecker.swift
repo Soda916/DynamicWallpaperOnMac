@@ -21,7 +21,9 @@ public final class UpdateChecker {
         }
     }
 
-    public static let currentAppVersion = "0.1.2-alpha"
+    public static var currentAppVersion: String {
+        return Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.1.3-alpha"
+    }
 
     private init() {}
 
