@@ -123,23 +123,36 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func loadSVGIcon(named name: String) -> NSImage? {
         let fm = FileManager.default
-        var svgURL: URL?
+        var searchURLs: [URL] = []
 
         if let url = Bundle.main.url(forResource: name, withExtension: "svg") {
-            svgURL = url
-        } else if let resourcePath = Bundle.main.resourcePath {
-            let path = URL(fileURLWithPath: resourcePath).appendingPathComponent("\(name).svg")
-            if fm.fileExists(atPath: path.path) { svgURL = path }
+            searchURLs.append(url)
+        }
+        if let resourcePath = Bundle.main.resourcePath {
+            searchURLs.append(URL(fileURLWithPath: resourcePath).appendingPathComponent("\(name).svg"))
+        }
+        searchURLs.append(URL(fileURLWithPath: fm.currentDirectoryPath).appendingPathComponent("\(name).svg"))
+
+        // Source-relative project root (ensures `swift run` always finds SVGs)
+        let sourceRootDir = URL(fileURLWithPath: #file)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .appendingPathComponent("\(name).svg")
+        searchURLs.append(sourceRootDir)
+
+        var targetURL: URL?
+        for url in searchURLs {
+            if fm.fileExists(atPath: url.path) {
+                targetURL = url
+                break
+            }
         }
 
-        if svgURL == nil {
-            let path = URL(fileURLWithPath: fm.currentDirectoryPath).appendingPathComponent("\(name).svg")
-            if fm.fileExists(atPath: path.path) { svgURL = path }
-        }
-
-        guard let targetURL = svgURL,
-              let data = try? Data(contentsOf: targetURL),
+        guard let validURL = targetURL,
+              let data = try? Data(contentsOf: validURL),
               let img = NSImage(data: data) else {
+            AppLogger.shared.error("[STATUS_BAR] Failed to load SVG icon: \(name).svg")
             return nil
         }
 
