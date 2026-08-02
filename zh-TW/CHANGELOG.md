@@ -9,6 +9,9 @@
 
 ## [0.1.2-alpha] - 2026-07-29
 
+> 💡 **已知問題與臨時對策**：
+> 如果在下載 ARM 版 (`arm64`) 時遇到「檔案已毀損，無法開啟」的問題，請對方先下載 **Universal (通用)** 版本作為備案。
+
 ### 新增與重構 (Added & Refactored)
 - **集中化隱藏媒體庫 (`MediaStorageManager`)**：
   - 自動將匯入之動態桌布整理收納於 `~/.dynamicwallpaper/media/` 隱藏目錄。

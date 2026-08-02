@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.1.2-alpha] - 2026-07-29
 
+> 💡 **Known Issue Workaround (已知問題與臨時對策)**:
+> 若在下載與開啟 Apple Silicon ARM 版 (`arm64`) 時遇到「檔案已毀損，無法開啟」或 Gatekeeper 攔截問題，請先下載 **Universal (通用)** 版本作為臨時備案。
+> *(If you encounter a "file is damaged and can't be opened" error when launching the downloaded ARM64 version, please download the **Universal** version as a temporary fallback.)*
+
 ### Added & Refactored
 - **Centralized Hidden Media Library (`MediaStorageManager`)**:
   - Automatically centralizes imported wallpaper files inside `~/.dynamicwallpaper/media/` hidden directory.

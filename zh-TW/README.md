@@ -89,6 +89,21 @@ chmod +x scripts/build_app.sh
 - **Apple Silicon (arm64)** (適配 M1/M2/M3/M4，檔案最小)
 - **Intel (x86_64)** (適配 Intel Mac)
 
+### ⚠️ 常見問題：遇到「檔案已毀損」或未署名開發者警告時
+透過瀏覽器下載非 App Store 應用程式時，macOS Gatekeeper 可能會顯示「"DynamicWallpaperEngine" 已經毀損，無法開啟。你應該將它丟到垃圾桶。」提示。
+
+請依循以下步驟解除隔離屬性（Quarantine）：
+1. 開啟 macOS 的 **終端機** (`Terminal.app`)。
+2. 執行以下命令清除應用程式的 Gatekeeper 隔離屬性：
+```bash
+# 清除已解開/已安裝 App 的隔離屬性 (建議)
+xattr -cr /Applications/DynamicWallpaperEngine.app
+
+# 或明確指定移除 com.apple.quarantine 屬性
+sudo xattr -rd com.apple.quarantine /Applications/DynamicWallpaperEngine.app
+```
+3. 若下載 Apple Silicon **ARM64** 版仍遇到狀況，請優先下載 **Universal (通用)** 版本作為臨時備案。
+
 ---
 
 ## 📄 授權條款與商業授權

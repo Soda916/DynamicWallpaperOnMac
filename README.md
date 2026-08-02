@@ -85,9 +85,22 @@ chmod +x scripts/build_app.sh
 ```
 
 ### Architectural Variants
-- **Universal** (最高相容性，適合所有 Mac)
-- **Apple Silicon (arm64)** (適配 M1/M2/M3/M4，檔案最小)
-- **Intel (x86_64)** (適配 Intel Mac)
+- **Universal** (Highest compatibility, recommended for all Macs)
+- **Apple Silicon (arm64)** (Optimized for M1/M2/M3/M4, smallest binary footprint)
+- **Intel (x86_64)** (For Intel Macs)
+
+### ⚠️ Troubleshooting: "App is Damaged" / Gatekeeper Warning
+If macOS displays `"DynamicWallpaperEngine" is damaged and can't be opened. You should move it to the Trash` after downloading via browser:
+1. Open **Terminal** (`Terminal.app`).
+2. Run the following command to remove the quarantine extended attribute:
+```bash
+# Clear quarantine attribute for downloaded App bundle
+xattr -cr /Applications/DynamicWallpaperEngine.app
+
+# Or remove quarantine attribute explicitly:
+sudo xattr -rd com.apple.quarantine /Applications/DynamicWallpaperEngine.app
+```
+3. If you are using the **ARM64** download on Apple Silicon and still encounter issues, please download the **Universal** variant as a fallback.
 
 ---
 
