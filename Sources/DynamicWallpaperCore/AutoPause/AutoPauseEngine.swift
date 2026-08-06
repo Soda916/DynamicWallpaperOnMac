@@ -16,8 +16,14 @@ public final class AutoPauseEngine {
     }
 
     private var workspaceObservers: [NSObjectProtocol] = []
+    private var distributedObservers: [NSObjectProtocol] = []
     private var timer: Timer?
     private var ownPID: pid_t = NSRunningApplication.current.processIdentifier
+
+    private(set) public var isScreenSleeping: Bool = false
+    private(set) public var isScreenLocked: Bool = false
+    private(set) public var isSystemSleeping: Bool = false
+    private(set) public var isLowPowerModeEnabled: Bool = ProcessInfo.processInfo.isLowPowerModeEnabled
 
     private init() {
         setupObservers()
@@ -30,7 +36,7 @@ public final class AutoPauseEngine {
     public func startMonitoring() {
         timer?.invalidate()
         
-        AppLogger.shared.info("[AUTOPAUSE] Started monitoring all displays for fullscreen/maximized windows.")
+        AppLogger.shared.info("[AUTOPAUSE] Started monitoring displays, system sleep, screen lock, and power state.")
         dumpScreenTopology()
         
         // Immediate check and 0.5s delayed check to capture existing windows at launch
@@ -51,6 +57,8 @@ public final class AutoPauseEngine {
 
     private func setupObservers() {
         let center = NSWorkspace.shared.notificationCenter
+        let defaultCenter = NotificationCenter.default
+        let distCenter = DistributedNotificationCenter.default()
         
         let obs1 = center.addObserver(forName: NSWorkspace.didActivateApplicationNotification, object: nil, queue: .main) { [weak self] _ in
             self?.evaluateAutoPauseConditions()
@@ -64,12 +72,55 @@ public final class AutoPauseEngine {
         let obs4 = center.addObserver(forName: NSWorkspace.activeSpaceDidChangeNotification, object: nil, queue: .main) { [weak self] _ in
             self?.evaluateAutoPauseConditions()
         }
-        let obs5 = NotificationCenter.default.addObserver(forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main) { [weak self] _ in
+        let obs5 = defaultCenter.addObserver(forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main) { [weak self] _ in
             self?.dumpScreenTopology()
             self?.evaluateAutoPauseConditions()
         }
         
-        workspaceObservers = [obs1, obs2, obs3, obs4, obs5]
+        // Screen Sleep & System Sleep Observers for Autonomous Power Conservation
+        let obsSleep = center.addObserver(forName: NSWorkspace.screensDidSleepNotification, object: nil, queue: .main) { [weak self] _ in
+            AppLogger.shared.info("[POWER-SAVER] Screens did sleep -> Pausing wallpaper execution.")
+            self?.isScreenSleeping = true
+            self?.evaluateAutoPauseConditions()
+        }
+        let obsWake = center.addObserver(forName: NSWorkspace.screensDidWakeNotification, object: nil, queue: .main) { [weak self] _ in
+            AppLogger.shared.info("[POWER-SAVER] Screens did wake -> Re-evaluating wallpaper state.")
+            self?.isScreenSleeping = false
+            self?.evaluateAutoPauseConditions()
+        }
+        let obsSysSleep = center.addObserver(forName: NSWorkspace.willSleepNotification, object: nil, queue: .main) { [weak self] _ in
+            AppLogger.shared.info("[POWER-SAVER] System will sleep -> Freezing playback pipeline.")
+            self?.isSystemSleeping = true
+            self?.evaluateAutoPauseConditions()
+        }
+        let obsSysWake = center.addObserver(forName: NSWorkspace.didWakeNotification, object: nil, queue: .main) { [weak self] _ in
+            AppLogger.shared.info("[POWER-SAVER] System did wake -> Resuming wallpaper pipeline.")
+            self?.isSystemSleeping = false
+            self?.evaluateAutoPauseConditions()
+        }
+        
+        // Low Power Mode Observer
+        let obsPower = defaultCenter.addObserver(forName: ProcessInfo.powerStateDidChangeNotification, object: nil, queue: .main) { [weak self] _ in
+            let lowPower = ProcessInfo.processInfo.isLowPowerModeEnabled
+            AppLogger.shared.info("[POWER-SAVER] Low Power Mode state changed: \(lowPower)")
+            self?.isLowPowerModeEnabled = lowPower
+            self?.evaluateAutoPauseConditions()
+        }
+
+        // Screen Lock / Unlock Distributed Observers
+        let obsLock = distCenter.addObserver(forName: NSNotification.Name("com.apple.screenIsLocked"), object: nil, queue: .main) { [weak self] _ in
+            AppLogger.shared.info("[POWER-SAVER] Screen locked -> Entering 0% CPU freeze state.")
+            self?.isScreenLocked = true
+            self?.evaluateAutoPauseConditions()
+        }
+        let obsUnlock = distCenter.addObserver(forName: NSNotification.Name("com.apple.screenIsUnlocked"), object: nil, queue: .main) { [weak self] _ in
+            AppLogger.shared.info("[POWER-SAVER] Screen unlocked -> Restoring playback.")
+            self?.isScreenLocked = false
+            self?.evaluateAutoPauseConditions()
+        }
+
+        workspaceObservers = [obs1, obs2, obs3, obs4, obs5, obsSleep, obsWake, obsSysSleep, obsSysWake, obsPower]
+        distributedObservers = [obsLock, obsUnlock]
     }
 
     public func dumpScreenTopology() {
@@ -83,6 +134,16 @@ public final class AutoPauseEngine {
     }
 
     public func evaluateAutoPauseConditions() {
+        // Hard Rule: If Screen is Sleeping, Locked, or System is Sleeping -> Always Force Pause (0% CPU/GPU Energy Mode)
+        if isScreenSleeping || isScreenLocked || isSystemSleeping {
+            if !isPaused {
+                isPaused = true
+                AppLogger.shared.info("[POWER-SAVER] System off-screen event active (sleep/lock/screensOff) -> Forcing Zero Energy Freeze state.")
+                NotificationCenter.default.post(name: .autoPausePauseStateDidChange, object: true)
+            }
+            return
+        }
+
         guard isEnabled else {
             if isPaused {
                 isPaused = false
@@ -166,3 +227,4 @@ public final class AutoPauseEngine {
         return false
     }
 }
+
