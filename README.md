@@ -84,13 +84,13 @@ chmod +x scripts/build_app.sh
 # The generated .dmg and .zip files will be available in the build/ directory.
 ```
 
-### Architectural Variants & Download Matrix (v0.1.3-alpha)
+### Architectural Variants & Download Matrix (v0.1.4-alpha)
 
-| Variant | Architecture | Recommended For | Download Link |
+| Architecture | Chip Target | Compatibility | Direct Download Links |
 | :--- | :--- | :--- | :--- |
-| **Universal (Recommended)** | Apple Silicon + Intel | All Macs | [DMG](https://github.com/Soda916/DynamicWallpaperOnMac/releases/download/v0.1.3-alpha/DynamicWallpaperEngine-v0.1.3-alpha-macOS-Universal.dmg) \| [ZIP](https://github.com/Soda916/DynamicWallpaperOnMac/releases/download/v0.1.3-alpha/DynamicWallpaperEngine-v0.1.3-alpha-macOS-Universal.zip) |
-| **Apple Silicon** | `arm64` | M1 / M2 / M3 / M4 | [DMG](https://github.com/Soda916/DynamicWallpaperOnMac/releases/download/v0.1.3-alpha/DynamicWallpaperEngine-v0.1.3-alpha-macOS-arm64.dmg) \| [ZIP](https://github.com/Soda916/DynamicWallpaperOnMac/releases/download/v0.1.3-alpha/DynamicWallpaperEngine-v0.1.3-alpha-macOS-arm64.zip) |
-| **Intel** | `x86_64` | Intel Macs | [DMG](https://github.com/Soda916/DynamicWallpaperOnMac/releases/download/v0.1.3-alpha/DynamicWallpaperEngine-v0.1.3-alpha-macOS-x86_64.dmg) \| [ZIP](https://github.com/Soda916/DynamicWallpaperOnMac/releases/download/v0.1.3-alpha/DynamicWallpaperEngine-v0.1.3-alpha-macOS-x86_64.zip) |
+| **Universal (Recommended)** | Apple Silicon + Intel | All Macs | [DMG](https://github.com/Soda916/DynamicWallpaperOnMac/releases/download/v0.1.4-alpha/DynamicWallpaperEngine-v0.1.4-alpha-macOS-Universal.dmg) \| [ZIP](https://github.com/Soda916/DynamicWallpaperOnMac/releases/download/v0.1.4-alpha/DynamicWallpaperEngine-v0.1.4-alpha-macOS-Universal.zip) |
+| **Apple Silicon** | `arm64` | M1 / M2 / M3 / M4 | [DMG](https://github.com/Soda916/DynamicWallpaperOnMac/releases/download/v0.1.4-alpha/DynamicWallpaperEngine-v0.1.4-alpha-macOS-arm64.dmg) \| [ZIP](https://github.com/Soda916/DynamicWallpaperOnMac/releases/download/v0.1.4-alpha/DynamicWallpaperEngine-v0.1.4-alpha-macOS-arm64.zip) |
+| **Intel** | `x86_64` | Intel Macs | [DMG](https://github.com/Soda916/DynamicWallpaperOnMac/releases/download/v0.1.4-alpha/DynamicWallpaperEngine-v0.1.4-alpha-macOS-x86_64.dmg) \| [ZIP](https://github.com/Soda916/DynamicWallpaperOnMac/releases/download/v0.1.4-alpha/DynamicWallpaperEngine-v0.1.4-alpha-macOS-x86_64.zip) |
 
 ### ⚠️ Troubleshooting: "App is Damaged" / Gatekeeper Warning
 If macOS displays `"DynamicWallpaperEngine" is damaged and can't be opened. You should move it to the Trash` after downloading via browser:

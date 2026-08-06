@@ -7,6 +7,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.4-alpha] - 2026-08-06
+
+### Added & Refactored
+- **Autonomous Power Conservation Pipeline (`AutoPauseEngine`)**:
+  - Implemented 100% autonomous energy management detecting screen sleep (`screensDidSleepNotification`), display lock (`com.apple.screenIsLocked`), system sleep (`willSleepNotification`), and macOS Low Power Mode (`NSProcessInfoPowerStateDidChange`).
+  - Automatically freezes playback and reduces process energy impact to 0% CPU/GPU whenever off-screen.
+- **Smart Background Timer Hibernation (`MediaPlaybackCore` & `DashboardWindowController`)**:
+  - AudioDucking CoreAudio process detector automatically hibernates when playback is paused or stopped.
+  - Dashboard monitor chatter timer (0.5s) hibernates upon window closure (`windowWillClose`) to eliminate unnecessary background UI polling.
+- **Polished Apple Native UI & Status Menu**:
+  - Refined Dashboard Live Monitor status badge hierarchy and HIG styling.
+  - Enhanced AppKit menu bar status indicators and tooltips for v0.1.4 production-ready quality.
+
 ## [0.1.3-alpha] - 2026-08-02
 
 ### Added & Refactored

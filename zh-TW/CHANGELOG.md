@@ -7,6 +7,19 @@
 格式基於 [Keep a Changelog](https://keepachangelog.com/zh-TW/1.0.0/)，
 且本專案遵守 [語意化版本控制 (Semantic Versioning)](https://semver.org/spec/v2.0.0.html)。
 
+## [0.1.4-alpha] - 2026-08-06
+
+### 新增與重構 (Added & Refactored)
+- **完全自主停止耗電機制 (`AutoPauseEngine`)**：
+  - 100% 整合螢幕休眠 (`screensDidSleepNotification`)、鎖屏 (screenIsLocked)、系統睡眠 (`willSleepNotification`) 與 macOS 低耗電模式 (`NSProcessInfoPowerStateDidChange`)。
+  - 當離開畫面或關閉顯示器時，自動凍結影片播放與解碼管道，達到 0% CPU/GPU 資源極致省電。
+- **背景高頻 Timer 智慧冬眠 (`MediaPlaybackCore` & `DashboardWindowController`)**：
+  - 當桌布處於暫停或停止狀態時，自動停用 CoreAudio 系統鴨音檢測 Timer。
+  - Dashboard 視窗關閉 (`windowWillClose`) 時自動凍結 0.5s UI Monitor，杜絕無謂的背景輪詢。
+- **Dashboard 與選單列原生視覺精緻化**：
+  - 提升 Dashboard Live Monitor 狀態指示 Badge 視覺層級與 HIG 原生操作質感。
+  - 完善選單列狀態提示與圖示狀態，打造 v0.1.4 正式版品質。
+
 ## [0.1.3-alpha] - 2026-08-02
 
 ### 新增與重構 (Added & Refactored)

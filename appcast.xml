@@ -6,6 +6,25 @@
         <description>Most recent updates for DynamicWallpaperEngine</description>
         <language>zh-TW</language>
         <item>
+            <title>DynamicWallpaperEngine v0.1.4-alpha</title>
+            <description><![CDATA[
+<h2>✨ DynamicWallpaperEngine v0.1.4-alpha 正式發布</h2>
+<ul>
+  <li><b>完全自主停止耗電機制 (Zero Energy Impact)</b>：全面整合螢幕休眠 (`screensDidSleepNotification`)、鎖屏 (screenIsLocked)、系統睡眠與低耗電模式 (Low Power Mode)，離開畫面自動凍結運算管道。</li>
+  <li><b>背景高頻 Timer 智慧冬眠</b>：影片暫停時自動停用 CoreAudio 系統鴨音檢測程序，Dashboard 關閉時自動凍結 0.5s UI Monitor，實現 0% 隱形 CPU 負載。</li>
+  <li><b>Dashboard & 選單列原生視覺精緻化</b>：提升 Dashboard Live Monitor 狀態指示 Badge 視覺層級，極致優化 AppKit 畫面細節與 HIG 操作體驗。</li>
+  <li><b>架構穩定性與繁體中文文檔完善</b>：全面優化架構可維護性，維持低 RAM 佔用與低 CPU / GPU 負載。</li>
+</ul>
+            ]]></description>
+            <sparkle:releaseNotesLink>https://github.com/Soda916/DynamicWallpaperOnMac/releases/tag/v0.1.4-alpha</sparkle:releaseNotesLink>
+            <pubDate>Thu, 06 Aug 2026 13:30:00 +0800</pubDate>
+            <enclosure url="https://github.com/Soda916/DynamicWallpaperOnMac/releases/download/v0.1.4-alpha/DynamicWallpaperEngine-v0.1.4-alpha-macOS-Universal.zip"
+                       sparkle:version="0.1.4"
+                       sparkle:shortVersionString="0.1.4-alpha"
+                       length="0"
+                       type="application/octet-stream" />
+        </item>
+        <item>
             <title>DynamicWallpaperEngine v0.1.3-alpha</title>
             <description><![CDATA[
 <h2>✨ DynamicWallpaperEngine v0.1.3-alpha 正式發布</h2>
