@@ -407,7 +407,7 @@ final class RawPlayerView: NSView {
 }
 
 /// AppKit Dashboard Window Controller providing raw live video stream preview, playlist management, and real-time console chatter logging.
-final class DashboardWindowController: NSWindowController, NSTableViewDataSource, NSTableViewDelegate {
+final class DashboardWindowController: NSWindowController, NSTableViewDataSource, NSTableViewDelegate, NSWindowDelegate {
     private let titleLabel = NSTextField(labelWithString: "Dynamic Wallpaper Engine")
     private let subtitleLabel = NSTextField(labelWithString: "macOS Native Live Stream Monitor & Playlist Manager")
     private let statusBadge = NSTextField(labelWithString: "Active Playback")
@@ -456,6 +456,7 @@ final class DashboardWindowController: NSWindowController, NSTableViewDataSource
         window.isReleasedWhenClosed = false
         super.init(window: window)
 
+        window.delegate = self
         setupUI()
         setupActions()
         observeControllerState()
@@ -856,7 +857,17 @@ final class DashboardWindowController: NSWindowController, NSTableViewDataSource
         }
     }
 
+    override func showWindow(_ sender: Any?) {
+        super.showWindow(sender)
+        startChatterTimer()
+    }
+
+    func windowWillClose(_ notification: Notification) {
+        stopChatterTimer()
+    }
+
     private func startChatterTimer() {
+        stopChatterTimer()
         chatterTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in
             guard let self = self else { return }
             let core = WallpaperController.shared.playbackCore
@@ -881,6 +892,11 @@ final class DashboardWindowController: NSWindowController, NSTableViewDataSource
 
             AppLogger.shared.debug("[CHATTER] Player Monitor Tick: rate=\(rate), time=\(String(format: "%.2f", current))s/\(String(format: "%.2f", total))s, status=\(status), itemStatus=\(itemStatus), itemError=\(itemError)")
         }
+    }
+
+    private func stopChatterTimer() {
+        chatterTimer?.invalidate()
+        chatterTimer = nil
     }
 
     @objc private func progressSliderScrubbed(_ sender: NSSlider) {

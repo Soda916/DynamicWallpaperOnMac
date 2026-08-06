@@ -192,12 +192,16 @@ public final class MediaPlaybackCore: @unchecked Sendable {
 
     public func play() {
         player.play()
+        if isDucked {
+            AudioDuckingDetector.shared.startMonitoring()
+        }
         AppLogger.shared.debug("MediaPlaybackCore: Playback rate set to 1.0 for \(currentURL?.lastPathComponent ?? "unknown")")
     }
 
     public func pause() {
         player.pause()
-        AppLogger.shared.debug("MediaPlaybackCore: Playback paused")
+        AudioDuckingDetector.shared.stopMonitoring()
+        AppLogger.shared.debug("MediaPlaybackCore: Playback paused & audio ducking detector hibernated")
     }
 
     public func stop() {
@@ -206,6 +210,7 @@ public final class MediaPlaybackCore: @unchecked Sendable {
 
         player.pause()
         player.replaceCurrentItem(with: nil)
+        AudioDuckingDetector.shared.stopMonitoring()
 
         if let observer = loopObserver {
             NotificationCenter.default.removeObserver(observer)
