@@ -100,7 +100,7 @@ public final class AutoPauseEngine {
         }
         
         // Low Power Mode Observer
-        let obsPower = defaultCenter.addObserver(forName: ProcessInfo.powerStateDidChangeNotification, object: nil, queue: .main) { [weak self] _ in
+        let obsPower = defaultCenter.addObserver(forName: NSNotification.Name.NSProcessInfoPowerStateDidChange, object: nil, queue: .main) { [weak self] _ in
             let lowPower = ProcessInfo.processInfo.isLowPowerModeEnabled
             AppLogger.shared.info("[POWER-SAVER] Low Power Mode state changed: \(lowPower)")
             self?.isLowPowerModeEnabled = lowPower
