@@ -7,18 +7,24 @@
 格式基於 [Keep a Changelog](https://keepachangelog.com/zh-TW/1.0.0/)，
 且本專案遵守 [語意化版本控制 (Semantic Versioning)](https://semver.org/spec/v2.0.0.html)。
 
-## [0.1.4-alpha] - 2026-08-06
+## [0.1.4-alpha] - 2026-08-07
 
 ### 新增與重構 (Added & Refactored)
-- **完全自主停止耗電機制 (`AutoPauseEngine`)**：
-  - 100% 整合螢幕休眠 (`screensDidSleepNotification`)、鎖屏 (screenIsLocked)、系統睡眠 (`willSleepNotification`) 與 macOS 低耗電模式 (`NSProcessInfoPowerStateDidChange`)。
-  - 當離開畫面或關閉顯示器時，自動凍結影片播放與解碼管道，達到 0% CPU/GPU 資源極致省電。
-- **背景高頻 Timer 智慧冬眠 (`MediaPlaybackCore` & `DashboardWindowController`)**：
-  - 當桌布處於暫停或停止狀態時，自動停用 CoreAudio 系統鴨音檢測 Timer。
-  - Dashboard 視窗關閉 (`windowWillClose`) 時自動凍結 0.5s UI Monitor，杜絕無謂的背景輪詢。
-- **Dashboard 與選單列原生視覺精緻化**：
-  - 提升 Dashboard Live Monitor 狀態指示 Badge 視覺層級與 HIG 原生操作質感。
-  - 完善選單列狀態提示與圖示狀態，打造 v0.1.4 正式版品質。
+- **多國語言 Engine (`LocalizationManager`)**：
+  - 核心多語言引擎支援英文 (`en`)、繁體中文 (`zh-Hant`)、簡體中文 (`zh-Hans`) 與日文 (`ja`)。
+  - 控制台支援實時切換顯示語言。
+  - 規範繁體中文統一翻譯為 **「控制台」**（簡體中文為「控制面板」）。
+  - 採用 `NotificationCenter` 全域廣播 (`.appLanguageDidChange`)，達成控制台、選單列與彈窗 100% 毫秒級實時同步。
+- **三段式低耗電省電模式 (`BatteryManager` & `AutoPauseEngine`)**：
+  - 採用 macOS 原生 `IOKit.ps` API 監控電池狀況：
+    - **Tier 1 ($\ge 20\%$)**：正常運作，電池模式下自動調降幀率與 SDR 峰值亮度。
+    - **Tier 2 ($10\% \le \text{電量} < \text{門檻}$)**：自動暫停影片解碼以拯救電量，並於狀態列顯示 SVG 警示圖示 (`laptopcomputer.trianglebadge.exclamationmark`)。
+    - **Tier 3 ($< 10\%$)**：完全停止 0% 耗電運算，凍結所有計時器與視窗拓撲檢測。
+  - 控制台提供智慧省電暫停門檻拉桿 (15% ~ 50%)。
+- **原生多語言自動更新對話框 (`UpdateChecker`)**：
+  - 繞過 Sparkle 預設未翻譯英文視窗，提供原生多語言「有新版本」、「目前已是最新版本」與「檢查更新失敗」彈窗。
+- **背景避音音量控制 (Audio Ducking)**：
+  - 整合 5% 背景降音功能並於選單列與控制台同步狀態。
 
 ## [0.1.3-alpha] - 2026-08-02
 

@@ -6,6 +6,25 @@
         <description>Most recent updates for DynamicWallpaperEngine</description>
         <language>zh-TW</language>
         <item>
+            <title>DynamicWallpaperEngine v0.1.4-alpha</title>
+            <description><![CDATA[
+<h2>✨ DynamicWallpaperEngine v0.1.4-alpha 正式發布</h2>
+<ul>
+  <li><b>多國語言引擎 (LocalizationManager)</b>：支援英文、繁體中文（控制台）、簡體中文（控制面板）與日文，全域廣播毫秒級實時同步。</li>
+  <li><b>三段式低耗電省電模式 (BatteryManager)</b>：採用 IOKit 原生 API 監控電池，可設定門檻低電量自動暫停與 10% 以下 0% 完全停運，低電量狀態列警示圖示。</li>
+  <li><b>頂部選單列多語言同步</b>：選單列項目（匯入、暫停/恢復、靜音、全螢幕暫停、控制台、檢查更新）全數動態本地化。</li>
+  <li><b>本機化自動更新與視窗優化</b>：繞過 Sparkle 預設英文彈窗，採用原生多語言 alert 彈窗顯示更新資訊。</li>
+</ul>
+            ]]></description>
+            <sparkle:releaseNotesLink>https://github.com/Soda916/DynamicWallpaperOnMac/releases/tag/v0.1.4-alpha</sparkle:releaseNotesLink>
+            <pubDate>Fri, 07 Aug 2026 15:35:00 +08:00</pubDate>
+            <enclosure url="https://github.com/Soda916/DynamicWallpaperOnMac/releases/download/v0.1.4-alpha/DynamicWallpaperEngine-v0.1.4-alpha-macOS-Universal.zip"
+                       sparkle:version="0.1.4"
+                       sparkle:shortVersionString="0.1.4-alpha"
+                       length="4162833"
+                       type="application/octet-stream" />
+        </item>
+        <item>
             <title>DynamicWallpaperEngine v0.1.3-alpha</title>
             <description><![CDATA[
 <h2>✨ DynamicWallpaperEngine v0.1.3-alpha 正式發布</h2>
