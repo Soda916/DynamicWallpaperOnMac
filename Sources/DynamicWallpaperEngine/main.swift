@@ -6,7 +6,7 @@ import DynamicWallpaperCore
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem?
     private var dashboardController: DashboardWindowController?
-    private var config: AppConfig = AppConfig()
+    var config: AppConfig = AppConfig()
     private var statusMenu: NSMenu?
 
     private var togglePlayPauseMenuItem: NSMenuItem?
@@ -110,7 +110,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         saveConfig()
     }
 
-    private func saveConfig() {
+    func saveConfig() {
         config.autoPauseOnFullscreen = WallpaperController.shared.autoPauseEngine.isEnabled
         config.isMuted = WallpaperController.shared.playbackCore.player.isMuted
         config.defaultVolume = WallpaperController.shared.playbackCore.userVolume
