@@ -64,6 +64,12 @@ public final class DesktopWindowController: NSWindowController {
 
         window.orderFrontRegardless()
     }
+
+    /// Toggles HDR Extended Dynamic Range (EDR) peak brightness to conserve display panel energy during Low Power Mode Tier 1.
+    public func setHDREnabled(_ enabled: Bool) {
+        playerLayer?.wantsExtendedDynamicRangeContent = enabled
+        AppLogger.shared.info("[DESKTOP-WINDOW] HDR Extended Dynamic Range Content set to: \(enabled)")
+    }
 }
 
 

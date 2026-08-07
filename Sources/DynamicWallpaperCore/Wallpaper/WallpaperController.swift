@@ -84,6 +84,24 @@ public final class WallpaperController: @unchecked Sendable {
                 NotificationCenter.default.post(name: .wallpaperPlayPauseStateDidChange, object: true)
             }
         }
+
+        NotificationCenter.default.addObserver(
+            forName: .lowPowerTierDidChange,
+            object: nil,
+            queue: .main
+        ) { [weak self] notif in
+            guard let self = self else { return }
+            guard let tier = notif.object as? LowPowerTier else { return }
+            AppLogger.shared.info("[WALLPAPER-CONTROLLER] Applying Low Power Tier settings: \(tier)")
+            
+            switch tier {
+            case .tier1_reducedQuality, .tier2_stopDecoding, .tier3_zeroEnergy:
+                self.displayManager.windowControllers.values.forEach { $0.setHDREnabled(false) }
+            case .none:
+                self.displayManager.windowControllers.values.forEach { $0.setHDREnabled(true) }
+            }
+        }
+
         autoPauseEngine.startMonitoring()
     }
 

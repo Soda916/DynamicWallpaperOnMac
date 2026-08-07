@@ -124,7 +124,30 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    private func loadWarningIcon() -> NSImage? {
+        let svgPath = "/Users/dustlee/program/DynamicWallPaper/tmp_uploads/laptopcomputer.trianglebadge.exclamationmark.svg"
+        if FileManager.default.fileExists(atPath: svgPath), let customImg = NSImage(contentsOfFile: svgPath) {
+            customImg.size = NSSize(width: 18, height: 18)
+            customImg.isTemplate = true
+            return customImg
+        }
+        let sfImg = NSImage(systemSymbolName: "laptopcomputer.trianglebadge.exclamationmark", accessibilityDescription: "Low Power Warning")
+            ?? NSImage(systemSymbolName: "exclamationmark.triangle.fill", accessibilityDescription: "Low Power Warning")
+        sfImg?.isTemplate = true
+        return sfImg
+    }
+
     private func updateStatusItemIcon() {
+        let activeTier = AutoPauseEngine.shared.activeLowPowerTier
+        if activeTier == .tier2_stopDecoding || activeTier == .tier3_zeroEnergy {
+            if let warningIcon = loadWarningIcon() {
+                statusItem?.button?.image = warningIcon
+                statusItem?.button?.toolTip = "⚠️ 低耗電模式警戒 (\(activeTier.description)) - 影音解碼已停止"
+                return
+            }
+        }
+        statusItem?.button?.toolTip = "Dynamic Wallpaper Engine"
+
         let isAutoPauseEnabled = config.autoPauseOnFullscreen
         let isAutoPaused = WallpaperController.shared.autoPauseEngine.isPaused
         let isPlaying = WallpaperController.shared.playbackCore.isPlaying && !isAutoPaused
@@ -230,6 +253,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         center.addObserver(forName: .autoPausePauseStateDidChange, object: nil, queue: .main) { [weak self] _ in
             self?.updateStatusItemIcon()
             self?.updateAutoPauseMenuItemState()
+        }
+
+        center.addObserver(forName: .lowPowerTierDidChange, object: nil, queue: .main) { [weak self] _ in
+            self?.updateStatusItemIcon()
         }
 
         center.addObserver(forName: .wallpaperAutoPauseConfigDidChange, object: nil, queue: .main) { [weak self] notif in

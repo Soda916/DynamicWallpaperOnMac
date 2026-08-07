@@ -3,12 +3,31 @@ import CoreGraphics
 
 public extension Notification.Name {
     static let autoPausePauseStateDidChange = Notification.Name("autoPausePauseStateDidChange")
+    static let lowPowerTierDidChange = Notification.Name("lowPowerTierDidChange")
+}
+
+public enum LowPowerTier: Int, CustomStringConvertible, Sendable {
+    case none = 0
+    case tier1_reducedQuality = 1 // Low Power Mode & Battery >= 20%: keep playing, reduce FPS & disable HDR peak brightness
+    case tier2_stopDecoding = 2   // Low Power Mode & 10% <= Battery < 20%: stop decoding & show warning icon in status bar
+    case tier3_zeroEnergy = 3     // Low Power Mode & Battery < 10%: complete 0% energy shutdown & show warning icon
+
+    public var description: String {
+        switch self {
+        case .none: return "Normal (AC Power / Full Battery)"
+        case .tier1_reducedQuality: return "Tier 1: Low Power Mode & Battery >= 20% (Reduced FPS & SDR Peak Brightness)"
+        case .tier2_stopDecoding: return "Tier 2: Low Power Mode & 10% <= Battery < 20% (Stopped Decoding & Warning Icon)"
+        case .tier3_zeroEnergy: return "Tier 3: Low Power Mode & Battery < 10% (Complete Zero-Energy Freeze & Warning Icon)"
+        }
+    }
 }
 
 public final class AutoPauseEngine {
     public static let shared = AutoPauseEngine()
 
     private(set) public var isPaused: Bool = false
+    private(set) public var activeLowPowerTier: LowPowerTier = .none
+
     public var isEnabled: Bool = false {
         didSet {
             evaluateAutoPauseConditions()
@@ -134,11 +153,45 @@ public final class AutoPauseEngine {
     }
 
     public func evaluateAutoPauseConditions() {
-        // Hard Rule: If Screen is Sleeping, Locked, or System is Sleeping -> Always Force Pause (0% CPU/GPU Energy Mode)
+        // Hard Rule 1: If Screen is Sleeping, Locked, or System is Sleeping -> Always Force Pause (0% CPU/GPU Energy Mode)
         if isScreenSleeping || isScreenLocked || isSystemSleeping {
             if !isPaused {
                 isPaused = true
                 AppLogger.shared.info("[POWER-SAVER] System off-screen event active (sleep/lock/screensOff) -> Forcing Zero Energy Freeze state.")
+                NotificationCenter.default.post(name: .autoPausePauseStateDidChange, object: true)
+            }
+            return
+        }
+
+        // Hard Rule 2: Low Power Mode 3-Tier Battery Evaluation
+        let lowPowerActive = ProcessInfo.processInfo.isLowPowerModeEnabled
+        let batInfo = BatteryManager.shared.refreshBatteryInfo()
+
+        let calculatedTier: LowPowerTier
+        if lowPowerActive || batInfo.isOnBattery {
+            let cap = batInfo.capacityPercent
+            if cap < 10 {
+                calculatedTier = .tier3_zeroEnergy
+            } else if cap < 20 {
+                calculatedTier = .tier2_stopDecoding
+            } else {
+                calculatedTier = .tier1_reducedQuality
+            }
+        } else {
+            calculatedTier = .none
+        }
+
+        if calculatedTier != activeLowPowerTier {
+            activeLowPowerTier = calculatedTier
+            AppLogger.shared.info("[POWER-SAVER] Low Power Tier Changed -> \(calculatedTier.description)")
+            NotificationCenter.default.post(name: .lowPowerTierDidChange, object: calculatedTier)
+        }
+
+        // Tier 2 (< 20%) & Tier 3 (< 10%): Halting decoding pipeline & forcing pause state
+        if calculatedTier == .tier2_stopDecoding || calculatedTier == .tier3_zeroEnergy {
+            if !isPaused {
+                isPaused = true
+                AppLogger.shared.info("[POWER-SAVER] Low Power Tier \(calculatedTier.rawValue) active -> Halting decoding pipeline.")
                 NotificationCenter.default.post(name: .autoPausePauseStateDidChange, object: true)
             }
             return
