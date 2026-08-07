@@ -96,9 +96,9 @@ public final class WallpaperController: @unchecked Sendable {
             
             switch tier {
             case .tier1_reducedQuality, .tier2_stopDecoding, .tier3_zeroEnergy:
-                self.displayManager.windowControllers.values.forEach { $0.setHDREnabled(false) }
+                self.displayManager.controllers.values.forEach { $0.setHDREnabled(false) }
             case .none:
-                self.displayManager.windowControllers.values.forEach { $0.setHDREnabled(true) }
+                self.displayManager.controllers.values.forEach { $0.setHDREnabled(true) }
             }
         }
 
