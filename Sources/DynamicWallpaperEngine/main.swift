@@ -49,7 +49,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             AppLogger.shared.info("[CHATTER] Dock Icon enabled as per user configuration")
         }
 
-        // Apply initial config to WallpaperController
+        // Apply initial config to WallpaperController & Localization
+        if let lang = AppLanguage(rawValue: config.appLanguage) {
+            LocalizationManager.shared.setLanguage(lang)
+        }
         WallpaperController.shared.autoPauseEngine.configProvider = { [weak self] in self?.config ?? AppConfig() }
         WallpaperController.shared.setAutoPauseEnabled(config.autoPauseOnFullscreen)
         WallpaperController.shared.setVolume(config.defaultVolume)
@@ -458,11 +461,14 @@ final class DashboardWindowController: NSWindowController, NSTableViewDataSource
 
     private let autoPauseCheckbox = NSButton(checkboxWithTitle: "Enable Auto-Pause on Fullscreen / Maximize", target: nil, action: nil)
     private let audioDuckingCheckbox = NSButton(checkboxWithTitle: "Audio Ducking (5% Volume)", target: nil, action: nil)
-    private let lowPowerModeCheckbox = NSButton(checkboxWithTitle: "Pause on macOS Low Power Mode Active", target: nil, action: nil)
-    private let batteryPauseCheckbox = NSButton(checkboxWithTitle: "Pause on Battery Power Below Threshold", target: nil, action: nil)
+    private let smartPowerSavingCheckbox = NSButton(checkboxWithTitle: "Smart Power Saving Mode", target: nil, action: nil)
+    private let emergencyPowerSavingCheckbox = NSButton(checkboxWithTitle: "Emergency Power Saving Mode", target: nil, action: nil)
 
-    private let batteryThresholdLabel = NSTextField(labelWithString: "Low Battery Threshold: 20%")
-    private let batteryThresholdSlider = NSSlider(value: 20.0, minValue: 5.0, maxValue: 50.0, target: nil, action: nil)
+    private let batteryThresholdLabel = NSTextField(labelWithString: "Smart Power Saving Threshold: 20%")
+    private let batteryThresholdSlider = NSSlider(value: 20.0, minValue: 15.0, maxValue: 50.0, target: nil, action: nil)
+
+    private let languageLabel = NSTextField(labelWithString: "App Language:")
+    private let languagePopUp = NSPopUpButton()
 
     private let volumeSlider = NSSlider(value: 1.0, minValue: 0.0, maxValue: 1.0, target: nil, action: nil)
     private let volumeLabel = NSTextField(labelWithString: "Volume: 100%")
@@ -494,6 +500,13 @@ final class DashboardWindowController: NSWindowController, NSTableViewDataSource
         setupActions()
         observeControllerState()
         startChatterTimer()
+        
+        LocalizationManager.shared.onLanguageChanged = { [weak self] in
+            DispatchQueue.main.async {
+                self?.updateLocalizedTexts()
+            }
+        }
+        updateLocalizedTexts()
     }
 
     required init?(coder: NSCoder) {
@@ -618,6 +631,27 @@ final class DashboardWindowController: NSWindowController, NSTableViewDataSource
         autoPauseCheckbox.state = AutoPauseEngine.shared.isEnabled ? .on : .off
         audioDuckingCheckbox.state = WallpaperController.shared.playbackCore.isDucked ? .on : .off
 
+        let appDelegate = NSApp.delegate as? AppDelegate
+        let cfg = appDelegate?.config ?? AppConfig()
+
+        smartPowerSavingCheckbox.state = cfg.isSmartPowerSavingEnabled ? .on : .off
+        emergencyPowerSavingCheckbox.state = cfg.isEmergencyPowerSavingEnabled ? .on : .off
+        batteryThresholdSlider.minValue = 15.0
+        batteryThresholdSlider.maxValue = 50.0
+        batteryThresholdSlider.doubleValue = Double(cfg.powerSavingThreshold)
+        batteryThresholdSlider.numberOfTickMarks = 8
+        batteryThresholdSlider.allowsTickMarkValuesOnly = true
+
+        languagePopUp.removeAllItems()
+        for lang in AppLanguage.allCases {
+            languagePopUp.addItem(withTitle: lang.displayName)
+        }
+        if let currentLang = AppLanguage(rawValue: cfg.appLanguage) {
+            if let idx = AppLanguage.allCases.firstIndex(of: currentLang) {
+                languagePopUp.selectItem(at: idx)
+            }
+        }
+
         let mediaControlStack = NSStackView(views: [prevButton, playPauseButton, nextButton, muteButton])
         mediaControlStack.orientation = .horizontal
         mediaControlStack.spacing = 8
@@ -626,18 +660,21 @@ final class DashboardWindowController: NSWindowController, NSTableViewDataSource
         modeStack.orientation = .horizontal
         modeStack.spacing = 8
 
+        let langStack = NSStackView(views: [languageLabel, languagePopUp])
+        langStack.orientation = .horizontal
+        langStack.spacing = 8
+
         batteryThresholdLabel.font = NSFont.systemFont(ofSize: 11)
         batteryThresholdLabel.textColor = .secondaryLabelColor
-        batteryThresholdSlider.numberOfTickMarks = 10
-        batteryThresholdSlider.allowsTickMarkValuesOnly = true
 
         let checkboxesStack = NSStackView(views: [
             autoPauseCheckbox,
             audioDuckingCheckbox,
-            lowPowerModeCheckbox,
-            batteryPauseCheckbox,
+            smartPowerSavingCheckbox,
+            emergencyPowerSavingCheckbox,
             batteryThresholdLabel,
-            batteryThresholdSlider
+            batteryThresholdSlider,
+            langStack
         ])
         checkboxesStack.orientation = .vertical
         checkboxesStack.alignment = .leading
@@ -767,17 +804,17 @@ final class DashboardWindowController: NSWindowController, NSTableViewDataSource
         removePlaylistItemButton.target = self
         removePlaylistItemButton.action = #selector(removeSelectedPlaylistItem)
 
-        clearPlaylistButton.target = self
-        clearPlaylistButton.action = #selector(clearPlaylistClicked)
+        smartPowerSavingCheckbox.target = self
+        smartPowerSavingCheckbox.action = #selector(smartPowerSavingToggled)
 
-        lowPowerModeCheckbox.target = self
-        lowPowerModeCheckbox.action = #selector(lowPowerModeToggled)
-
-        batteryPauseCheckbox.target = self
-        batteryPauseCheckbox.action = #selector(batteryPauseToggled)
+        emergencyPowerSavingCheckbox.target = self
+        emergencyPowerSavingCheckbox.action = #selector(emergencyPowerSavingToggled)
 
         batteryThresholdSlider.target = self
         batteryThresholdSlider.action = #selector(batteryThresholdChanged)
+
+        languagePopUp.target = self
+        languagePopUp.action = #selector(languageSelectionChanged)
     }
 
     private func observeControllerState() {
@@ -1079,20 +1116,66 @@ final class DashboardWindowController: NSWindowController, NSTableViewDataSource
         WallpaperController.shared.setVolume(vol)
     }
 
-    @objc private func lowPowerModeToggled() {
-        let isEnabled = (lowPowerModeCheckbox.state == .on)
-        AppLogger.shared.info("[DASHBOARD] Toggled Auto-Pause on Low Power Mode: \(isEnabled)")
+    @objc private func smartPowerSavingToggled() {
+        let isEnabled = (smartPowerSavingCheckbox.state == .on)
+        let appDelegate = NSApp.delegate as? AppDelegate
+        appDelegate?.config.isSmartPowerSavingEnabled = isEnabled
+        appDelegate?.saveConfig()
+        WallpaperController.shared.autoPauseEngine.evaluateAutoPauseConditions()
+        AppLogger.shared.info("[DASHBOARD] Toggled Smart Power Saving Mode: \(isEnabled)")
     }
 
-    @objc private func batteryPauseToggled() {
-        let isEnabled = (batteryPauseCheckbox.state == .on)
-        AppLogger.shared.info("[DASHBOARD] Toggled Auto-Pause on Low Battery: \(isEnabled)")
+    @objc private func emergencyPowerSavingToggled() {
+        let isEnabled = (emergencyPowerSavingCheckbox.state == .on)
+        let appDelegate = NSApp.delegate as? AppDelegate
+        appDelegate?.config.isEmergencyPowerSavingEnabled = isEnabled
+        appDelegate?.saveConfig()
+        WallpaperController.shared.autoPauseEngine.evaluateAutoPauseConditions()
+        AppLogger.shared.info("[DASHBOARD] Toggled Emergency Power Saving Mode: \(isEnabled)")
     }
 
     @objc private func batteryThresholdChanged(_ sender: NSSlider) {
         let val = Int(sender.doubleValue)
-        batteryThresholdLabel.stringValue = "Low Battery Threshold: \(val)%"
-        AppLogger.shared.info("[DASHBOARD] Low Battery Threshold set to \(val)%")
+        let appDelegate = NSApp.delegate as? AppDelegate
+        appDelegate?.config.powerSavingThreshold = val
+        appDelegate?.saveConfig()
+        batteryThresholdLabel.stringValue = LocalizationManager.shared.localized("smart_power_saving_threshold", val)
+        WallpaperController.shared.autoPauseEngine.evaluateAutoPauseConditions()
+        AppLogger.shared.info("[DASHBOARD] Smart Power Saving Threshold set to \(val)%")
+    }
+
+    @objc private func languageSelectionChanged(_ sender: NSPopUpButton) {
+        let idx = sender.indexOfSelectedItem
+        guard idx >= 0 && idx < AppLanguage.allCases.count else { return }
+        let selectedLang = AppLanguage.allCases[idx]
+        
+        let appDelegate = NSApp.delegate as? AppDelegate
+        appDelegate?.config.appLanguage = selectedLang.rawValue
+        appDelegate?.saveConfig()
+        
+        LocalizationManager.shared.setLanguage(selectedLang)
+        updateLocalizedTexts()
+        AppLogger.shared.info("[DASHBOARD] Language switched to: \(selectedLang.displayName) (\(selectedLang.rawValue))")
+    }
+
+    private func updateLocalizedTexts() {
+        let loc = LocalizationManager.shared
+        titleLabel.stringValue = loc.localized("dashboard_title")
+        importButton.title = loc.localized("import_button")
+        prevButton.title = loc.localized("prev_button")
+        playPauseButton.title = WallpaperController.shared.playbackCore.isPlaying ? loc.localized("pause_button") : loc.localized("play_button")
+        nextButton.title = loc.localized("next_button")
+        muteButton.title = WallpaperController.shared.playbackCore.player.isMuted ? loc.localized("unmute_button") : loc.localized("mute_button")
+        autoPauseCheckbox.title = loc.localized("auto_pause_fullscreen")
+        audioDuckingCheckbox.title = loc.localized("audio_ducking")
+        smartPowerSavingCheckbox.title = loc.localized("smart_power_saving")
+        emergencyPowerSavingCheckbox.title = loc.localized("emergency_power_saving")
+        
+        let threshVal = Int(batteryThresholdSlider.doubleValue)
+        batteryThresholdLabel.stringValue = loc.localized("smart_power_saving_threshold", threshVal)
+        languageLabel.stringValue = loc.localized("app_language")
+        removePlaylistItemButton.title = loc.localized("remove_selected")
+        clearPlaylistButton.title = loc.localized("clear_playlist")
     }
 }
 
