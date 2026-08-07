@@ -430,6 +430,11 @@ final class DashboardWindowController: NSWindowController, NSTableViewDataSource
 
     private let autoPauseCheckbox = NSButton(checkboxWithTitle: "Enable Auto-Pause on Fullscreen / Maximize", target: nil, action: nil)
     private let audioDuckingCheckbox = NSButton(checkboxWithTitle: "Audio Ducking (5% Volume)", target: nil, action: nil)
+    private let lowPowerModeCheckbox = NSButton(checkboxWithTitle: "Pause on macOS Low Power Mode Active", target: nil, action: nil)
+    private let batteryPauseCheckbox = NSButton(checkboxWithTitle: "Pause on Battery Power Below Threshold", target: nil, action: nil)
+
+    private let batteryThresholdLabel = NSTextField(labelWithString: "Low Battery Threshold: 20%")
+    private let batteryThresholdSlider = NSSlider(value: 20.0, minValue: 5.0, maxValue: 50.0, target: nil, action: nil)
 
     private let volumeSlider = NSSlider(value: 1.0, minValue: 0.0, maxValue: 1.0, target: nil, action: nil)
     private let volumeLabel = NSTextField(labelWithString: "Volume: 100%")
@@ -585,15 +590,19 @@ final class DashboardWindowController: NSWindowController, NSTableViewDataSource
         autoPauseCheckbox.state = AutoPauseEngine.shared.isEnabled ? .on : .off
         audioDuckingCheckbox.state = WallpaperController.shared.playbackCore.isDucked ? .on : .off
 
-        let mediaControlStack = NSStackView(views: [prevButton, playPauseButton, nextButton, muteButton])
-        mediaControlStack.orientation = .horizontal
-        mediaControlStack.spacing = 8
+        batteryThresholdLabel.font = NSFont.systemFont(ofSize: 11)
+        batteryThresholdLabel.textColor = .secondaryLabelColor
+        batteryThresholdSlider.numberOfTickMarks = 10
+        batteryThresholdSlider.allowsTickMarkValuesOnly = true
 
-        let modeStack = NSStackView(views: [NSTextField(labelWithString: "Playback Mode:"), modePopUp])
-        modeStack.orientation = .horizontal
-        modeStack.spacing = 8
-
-        let checkboxesStack = NSStackView(views: [autoPauseCheckbox, audioDuckingCheckbox])
+        let checkboxesStack = NSStackView(views: [
+            autoPauseCheckbox,
+            audioDuckingCheckbox,
+            lowPowerModeCheckbox,
+            batteryPauseCheckbox,
+            batteryThresholdLabel,
+            batteryThresholdSlider
+        ])
         checkboxesStack.orientation = .vertical
         checkboxesStack.alignment = .leading
         checkboxesStack.spacing = 6
@@ -724,6 +733,15 @@ final class DashboardWindowController: NSWindowController, NSTableViewDataSource
 
         clearPlaylistButton.target = self
         clearPlaylistButton.action = #selector(clearPlaylistClicked)
+
+        lowPowerModeCheckbox.target = self
+        lowPowerModeCheckbox.action = #selector(lowPowerModeToggled)
+
+        batteryPauseCheckbox.target = self
+        batteryPauseCheckbox.action = #selector(batteryPauseToggled)
+
+        batteryThresholdSlider.target = self
+        batteryThresholdSlider.action = #selector(batteryThresholdChanged)
     }
 
     private func observeControllerState() {
@@ -1023,6 +1041,22 @@ final class DashboardWindowController: NSWindowController, NSTableViewDataSource
     @objc private func volumeSliderChanged() {
         let vol = volumeSlider.floatValue
         WallpaperController.shared.setVolume(vol)
+    }
+
+    @objc private func lowPowerModeToggled() {
+        let isEnabled = (lowPowerModeCheckbox.state == .on)
+        AppLogger.shared.info("[DASHBOARD] Toggled Auto-Pause on Low Power Mode: \(isEnabled)")
+    }
+
+    @objc private func batteryPauseToggled() {
+        let isEnabled = (batteryPauseCheckbox.state == .on)
+        AppLogger.shared.info("[DASHBOARD] Toggled Auto-Pause on Low Battery: \(isEnabled)")
+    }
+
+    @objc private func batteryThresholdChanged(_ sender: NSSlider) {
+        let val = Int(sender.doubleValue)
+        batteryThresholdLabel.stringValue = "Low Battery Threshold: \(val)%"
+        AppLogger.shared.info("[DASHBOARD] Low Battery Threshold set to \(val)%")
     }
 }
 
