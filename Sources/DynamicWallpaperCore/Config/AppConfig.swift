@@ -31,6 +31,10 @@ public struct AppConfig: Codable, Equatable {
     public var autoPauseOnLowPowerMode: Bool
     public var autoPauseOnBattery: Bool
     public var autoPauseBatteryThreshold: Int
+    public var isSmartPowerSavingEnabled: Bool
+    public var isEmergencyPowerSavingEnabled: Bool
+    public var powerSavingThreshold: Int
+    public var appLanguage: String
     public var wakeUpAction: WakeUpAction
     public var isAudioDucked: Bool
     public var lastWallpaperPath: String?
@@ -61,6 +65,10 @@ public struct AppConfig: Codable, Equatable {
         autoPauseOnLowPowerMode: Bool = true,
         autoPauseOnBattery: Bool = false,
         autoPauseBatteryThreshold: Int = 20,
+        isSmartPowerSavingEnabled: Bool = true,
+        isEmergencyPowerSavingEnabled: Bool = true,
+        powerSavingThreshold: Int = 20,
+        appLanguage: String = "system",
         wakeUpAction: WakeUpAction = .resume,
         isAudioDucked: Bool = true,
         lastWallpaperPath: String? = nil,
@@ -85,6 +93,10 @@ public struct AppConfig: Codable, Equatable {
         self.autoPauseOnLowPowerMode = autoPauseOnLowPowerMode
         self.autoPauseOnBattery = autoPauseOnBattery
         self.autoPauseBatteryThreshold = autoPauseBatteryThreshold
+        self.isSmartPowerSavingEnabled = isSmartPowerSavingEnabled
+        self.isEmergencyPowerSavingEnabled = isEmergencyPowerSavingEnabled
+        self.powerSavingThreshold = powerSavingThreshold
+        self.appLanguage = appLanguage
         self.wakeUpAction = wakeUpAction
         self.isAudioDucked = isAudioDucked
         self.lastWallpaperPath = lastWallpaperPath
@@ -112,6 +124,10 @@ public struct AppConfig: Codable, Equatable {
         self.autoPauseOnLowPowerMode = try container.decodeIfPresent(Bool.self, forKey: .autoPauseOnLowPowerMode) ?? true
         self.autoPauseOnBattery = try container.decodeIfPresent(Bool.self, forKey: .autoPauseOnBattery) ?? false
         self.autoPauseBatteryThreshold = try container.decodeIfPresent(Int.self, forKey: .autoPauseBatteryThreshold) ?? 20
+        self.isSmartPowerSavingEnabled = try container.decodeIfPresent(Bool.self, forKey: .isSmartPowerSavingEnabled) ?? true
+        self.isEmergencyPowerSavingEnabled = try container.decodeIfPresent(Bool.self, forKey: .isEmergencyPowerSavingEnabled) ?? true
+        self.powerSavingThreshold = try container.decodeIfPresent(Int.self, forKey: .powerSavingThreshold) ?? 20
+        self.appLanguage = try container.decodeIfPresent(String.self, forKey: .appLanguage) ?? "system"
         self.wakeUpAction = try container.decodeIfPresent(WakeUpAction.self, forKey: .wakeUpAction) ?? .resume
         self.isAudioDucked = try container.decodeIfPresent(Bool.self, forKey: .isAudioDucked) ?? true
         self.lastWallpaperPath = try container.decodeIfPresent(String.self, forKey: .lastWallpaperPath)
