@@ -103,7 +103,15 @@ public final class LocalizationManager: @unchecked Sendable {
             "menu_open_dashboard": "Open Control Panel...",
             "menu_check_updates": "Check for Updates...",
             "menu_launch_login": "Launch at Login",
-            "menu_quit": "Quit Dynamic Wallpaper Engine"
+            "menu_quit": "Quit Dynamic Wallpaper Engine",
+            "update_alert_title": "✨ New Version Available (%@)",
+            "update_alert_info": "Dynamic Wallpaper Engine has a new version released!\n\nRelease Notes:\n%@",
+            "update_alert_download": "Download Update",
+            "update_alert_later": "Remind Me Later",
+            "update_alert_no_update_title": "No Updates Available",
+            "update_alert_no_update_info": "You are currently running the latest version of Dynamic Wallpaper Engine (%@).",
+            "update_alert_error_title": "Update Check Failed",
+            "update_alert_ok": "OK"
         ],
         "zh-Hant": [
             "dashboard_title": "動態桌布引擎 - 控制台",
@@ -138,7 +146,15 @@ public final class LocalizationManager: @unchecked Sendable {
             "menu_open_dashboard": "開啟控制台...",
             "menu_check_updates": "檢查更新...",
             "menu_launch_login": "開機自動啟動",
-            "menu_quit": "結束動態桌布引擎"
+            "menu_quit": "結束動態桌布引擎",
+            "update_alert_title": "✨ 有新版本可供更新 (%@)",
+            "update_alert_info": "Dynamic Wallpaper Engine 已發布最新版本！\n\n更新說明：\n%@",
+            "update_alert_download": "前往 GitHub 下載",
+            "update_alert_later": "稍後提醒",
+            "update_alert_no_update_title": "目前已是最新版本",
+            "update_alert_no_update_info": "您目前使用的 Dynamic Wallpaper Engine (%@) 已是最新版本。",
+            "update_alert_error_title": "檢查更新失敗",
+            "update_alert_ok": "確定"
         ],
         "zh-Hans": [
             "dashboard_title": "动态壁纸引擎 - 控制面板",
@@ -173,7 +189,15 @@ public final class LocalizationManager: @unchecked Sendable {
             "menu_open_dashboard": "打开控制面板...",
             "menu_check_updates": "检查更新...",
             "menu_launch_login": "开机自动启动",
-            "menu_quit": "退出动态壁纸引擎"
+            "menu_quit": "退出动态壁纸引擎",
+            "update_alert_title": "✨ 有新版本可供更新 (%@)",
+            "update_alert_info": "Dynamic Wallpaper Engine 已发布最新版本！\n\n更新说明：\n%@",
+            "update_alert_download": "前往 GitHub 下载",
+            "update_alert_later": "稍后提醒",
+            "update_alert_no_update_title": "当前已是最新版本",
+            "update_alert_no_update_info": "您当前使用的 Dynamic Wallpaper Engine (%@) 已是最新版本。",
+            "update_alert_error_title": "检查更新失败",
+            "update_alert_ok": "确定"
         ],
         "ja": [
             "dashboard_title": "ダイナミック壁紙エンジン - コントロールパネル",
@@ -208,7 +232,15 @@ public final class LocalizationManager: @unchecked Sendable {
             "menu_open_dashboard": "コントロールパネルを開く...",
             "menu_check_updates": "更新を確認...",
             "menu_launch_login": "ログイン時に起動",
-            "menu_quit": "Dynamic Wallpaper Engine を終了"
+            "menu_quit": "Dynamic Wallpaper Engine を終了",
+            "update_alert_title": "✨ 新しいバージョンが利用可能です (%@)",
+            "update_alert_info": "Dynamic Wallpaper Engine の最新バージョンがリリースされました！\n\n更新内容：\n%@",
+            "update_alert_download": "GitHub でダウンロード",
+            "update_alert_later": "後で通知",
+            "update_alert_no_update_title": "最新バージョンです",
+            "update_alert_no_update_info": "現在使用中の Dynamic Wallpaper Engine (%@) は最新バージョンです。",
+            "update_alert_error_title": "更新チェックに失敗しました",
+            "update_alert_ok": "OK"
         ]
     ]
 }
