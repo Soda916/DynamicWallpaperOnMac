@@ -34,10 +34,6 @@ public final class UpdateChecker: @unchecked Sendable {
 
     /// Performs an asynchronous update check against GitHub API with full multi-language alert modals.
     public func performLocalizedUpdateCheck(explicitUserInitiated: Bool = true, completion: ((Result<ReleaseInfo, Error>) -> Void)? = nil) {
-        // Also trigger Sparkle updater controller for native appcast support
-        SparkleUpdaterManager.shared.start(startingUpdater: true)
-        SparkleUpdaterManager.shared.checkForUpdates()
-
         guard let url = URL(string: "https://api.github.com/repos/\(repositoryOwner)/\(repositoryName)/releases/latest") else { return }
 
         var request = URLRequest(url: url)
