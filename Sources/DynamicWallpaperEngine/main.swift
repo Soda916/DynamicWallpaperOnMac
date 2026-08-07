@@ -590,6 +590,14 @@ final class DashboardWindowController: NSWindowController, NSTableViewDataSource
         autoPauseCheckbox.state = AutoPauseEngine.shared.isEnabled ? .on : .off
         audioDuckingCheckbox.state = WallpaperController.shared.playbackCore.isDucked ? .on : .off
 
+        let mediaControlStack = NSStackView(views: [prevButton, playPauseButton, nextButton, muteButton])
+        mediaControlStack.orientation = .horizontal
+        mediaControlStack.spacing = 8
+
+        let modeStack = NSStackView(views: [NSTextField(labelWithString: "Playback Mode:"), modePopUp])
+        modeStack.orientation = .horizontal
+        modeStack.spacing = 8
+
         batteryThresholdLabel.font = NSFont.systemFont(ofSize: 11)
         batteryThresholdLabel.textColor = .secondaryLabelColor
         batteryThresholdSlider.numberOfTickMarks = 10
