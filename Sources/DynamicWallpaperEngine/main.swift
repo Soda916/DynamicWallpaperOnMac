@@ -401,7 +401,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func checkForUpdatesClicked() {
-        SparkleUpdaterManager.shared.checkForUpdates()
+        UpdateChecker.shared.performLocalizedUpdateCheck(explicitUserInitiated: true)
     }
 
     @objc private func quitApp() {
