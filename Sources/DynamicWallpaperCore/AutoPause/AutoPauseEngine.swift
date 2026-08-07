@@ -27,6 +27,7 @@ public final class AutoPauseEngine {
 
     private(set) public var isPaused: Bool = false
     private(set) public var activeLowPowerTier: LowPowerTier = .none
+    public var configProvider: (() -> AppConfig)?
 
     public var isEnabled: Bool = false {
         didSet {
@@ -163,20 +164,22 @@ public final class AutoPauseEngine {
             return
         }
 
-        // Hard Rule 2: Low Power Mode 3-Tier Battery Evaluation
+        // Hard Rule 2: Low Power Mode & Battery Tier Evaluation (Smart & Emergency Power Saving)
         let lowPowerActive = ProcessInfo.processInfo.isLowPowerModeEnabled
         let batInfo = BatteryManager.shared.refreshBatteryInfo()
+        let cap = batInfo.capacityPercent
+
+        let isEmergencyEnabled = configProvider?().isEmergencyPowerSavingEnabled ?? true
+        let isSmartEnabled = configProvider?().isSmartPowerSavingEnabled ?? true
+        let threshold = configProvider?().powerSavingThreshold ?? 20
 
         let calculatedTier: LowPowerTier
-        if lowPowerActive || batInfo.isOnBattery {
-            let cap = batInfo.capacityPercent
-            if cap < 10 {
-                calculatedTier = .tier3_zeroEnergy
-            } else if cap < 20 {
-                calculatedTier = .tier2_stopDecoding
-            } else {
-                calculatedTier = .tier1_reducedQuality
-            }
+        if isEmergencyEnabled && (lowPowerActive || batInfo.isOnBattery) && cap < 10 {
+            calculatedTier = .tier3_zeroEnergy
+        } else if isSmartEnabled && (lowPowerActive || batInfo.isOnBattery) && cap < threshold {
+            calculatedTier = .tier2_stopDecoding
+        } else if isSmartEnabled && (lowPowerActive || batInfo.isOnBattery) {
+            calculatedTier = .tier1_reducedQuality
         } else {
             calculatedTier = .none
         }

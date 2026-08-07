@@ -50,6 +50,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         // Apply initial config to WallpaperController
+        WallpaperController.shared.autoPauseEngine.configProvider = { [weak self] in self?.config ?? AppConfig() }
         WallpaperController.shared.setAutoPauseEnabled(config.autoPauseOnFullscreen)
         WallpaperController.shared.setVolume(config.defaultVolume)
         WallpaperController.shared.setMuted(config.isMuted)
