@@ -272,13 +272,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func setupGlobalStateObservers() {
-        LocalizationManager.shared.onLanguageChanged = { [weak self] in
-            DispatchQueue.main.async {
-                self?.updateStatusMenuItemsLocalization()
-            }
-        }
-
         let center = NotificationCenter.default
+
+        center.addObserver(forName: .appLanguageDidChange, object: nil, queue: .main) { [weak self] _ in
+            self?.updateStatusMenuItemsLocalization()
+        }
         center.addObserver(forName: .wallpaperMuteStateDidChange, object: nil, queue: .main) { [weak self] notif in
             if let isMuted = notif.object as? Bool {
                 self?.config.isMuted = isMuted
@@ -542,10 +540,8 @@ final class DashboardWindowController: NSWindowController, NSTableViewDataSource
         observeControllerState()
         startChatterTimer()
         
-        LocalizationManager.shared.onLanguageChanged = { [weak self] in
-            DispatchQueue.main.async {
-                self?.updateLocalizedTexts()
-            }
+        NotificationCenter.default.addObserver(forName: .appLanguageDidChange, object: nil, queue: .main) { [weak self] _ in
+            self?.updateLocalizedTexts()
         }
         updateLocalizedTexts()
     }

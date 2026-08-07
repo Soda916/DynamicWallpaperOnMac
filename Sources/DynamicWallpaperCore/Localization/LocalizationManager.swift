@@ -18,18 +18,21 @@ public enum AppLanguage: String, CaseIterable, Sendable, Codable {
     }
 }
 
+public extension Notification.Name {
+    static let appLanguageDidChange = Notification.Name("appLanguageDidChange")
+}
+
 /// Central Localization Manager providing multi-language support (English, Traditional Chinese, Simplified Chinese, Japanese) with real-time UI switching.
 public final class LocalizationManager: @unchecked Sendable {
     public static let shared = LocalizationManager()
 
     public private(set) var currentLanguage: AppLanguage = .system
-    public var onLanguageChanged: (() -> Void)?
 
     private init() {}
 
     public func setLanguage(_ language: AppLanguage) {
         self.currentLanguage = language
-        onLanguageChanged?()
+        NotificationCenter.default.post(name: .appLanguageDidChange, object: language)
     }
 
     public func localized(_ key: String, _ args: CVarArg...) -> String {
