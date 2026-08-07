@@ -68,7 +68,7 @@ public final class LocalizationManager: @unchecked Sendable {
 
     private let strings: [String: [String: String]] = [
         "en": [
-            "dashboard_title": "Dynamic Wallpaper Engine - Dashboard",
+            "dashboard_title": "Dynamic Wallpaper Engine - Control Panel",
             "import_button": "Import / Select Wallpaper Video...",
             "prev_button": "⏮ Prev",
             "pause_button": "Pause",
@@ -87,10 +87,23 @@ public final class LocalizationManager: @unchecked Sendable {
             "clear_playlist": "Clear Playlist",
             "console_logs": "Real-Time Console Chatter & Logs:",
             "status_ready": "Status: Ready",
-            "status_playing": "Status: Playing %@"
+            "status_playing": "Status: Playing %@",
+            "menu_import": "Import Wallpaper...",
+            "menu_pause": "Pause Playback",
+            "menu_resume": "Resume Playback",
+            "menu_mute": "Mute Sound",
+            "menu_unmute": "Unmute Sound",
+            "menu_audio_ducking": "Audio Ducking (5% Volume)",
+            "menu_auto_pause": "Auto-Pause on Fullscreen",
+            "menu_auto_pause_active": "Auto-Pause on Fullscreen (Active)",
+            "menu_auto_pause_paused": "Auto-Pause on Fullscreen (Auto-Paused)",
+            "menu_open_dashboard": "Open Control Panel...",
+            "menu_check_updates": "Check for Updates...",
+            "menu_launch_login": "Launch at Login",
+            "menu_quit": "Quit Dynamic Wallpaper Engine"
         ],
         "zh-Hant": [
-            "dashboard_title": "動態桌布引擎 - 控制儀表板",
+            "dashboard_title": "動態桌布引擎 - 控制台",
             "import_button": "匯入 / 選擇動態桌布影片...",
             "prev_button": "⏮ 上一張",
             "pause_button": "暫停",
@@ -109,10 +122,23 @@ public final class LocalizationManager: @unchecked Sendable {
             "clear_playlist": "清空播放清單",
             "console_logs": "實時系統 Chatter 與日誌監控：",
             "status_ready": "狀態：就緒",
-            "status_playing": "狀態：正在播放 %@"
+            "status_playing": "狀態：正在播放 %@",
+            "menu_import": "匯入動態桌布...",
+            "menu_pause": "暫停播放",
+            "menu_resume": "恢復播放",
+            "menu_mute": "靜音",
+            "menu_unmute": "取消靜音",
+            "menu_audio_ducking": "自動降低背景音量 (減至 5%)",
+            "menu_auto_pause": "全螢幕自動暫停",
+            "menu_auto_pause_active": "全螢幕自動暫停 (運作中)",
+            "menu_auto_pause_paused": "全螢幕自動暫停 (已自動暫停)",
+            "menu_open_dashboard": "開啟控制台...",
+            "menu_check_updates": "檢查更新...",
+            "menu_launch_login": "開機自動啟動",
+            "menu_quit": "結束動態桌布引擎"
         ],
         "zh-Hans": [
-            "dashboard_title": "动态壁纸引擎 - 控制仪表板",
+            "dashboard_title": "动态壁纸引擎 - 控制面板",
             "import_button": "导入 / 选择动态壁纸视频...",
             "prev_button": "⏮ 上一张",
             "pause_button": "暂停",
@@ -131,10 +157,23 @@ public final class LocalizationManager: @unchecked Sendable {
             "clear_playlist": "清空播放列表",
             "console_logs": "实时系统 Chatter 与日志监控：",
             "status_ready": "状态：就绪",
-            "status_playing": "状态：正在播放 %@"
+            "status_playing": "状态：正在播放 %@",
+            "menu_import": "导入动态壁纸...",
+            "menu_pause": "暂停播放",
+            "menu_resume": "恢复播放",
+            "menu_mute": "静音",
+            "menu_unmute": "取消静音",
+            "menu_audio_ducking": "音量避让 (降至 5%)",
+            "menu_auto_pause": "全屏自动暂停",
+            "menu_auto_pause_active": "全屏自动暂停 (工作中)",
+            "menu_auto_pause_paused": "全屏自动暂停 (已自动暂停)",
+            "menu_open_dashboard": "打开控制面板...",
+            "menu_check_updates": "检查更新...",
+            "menu_launch_login": "开机自动启动",
+            "menu_quit": "退出动态壁纸引擎"
         ],
         "ja": [
-            "dashboard_title": "ダイナミック壁紙エンジン - ダッシュボード",
+            "dashboard_title": "ダイナミック壁紙エンジン - コントロールパネル",
             "import_button": "壁紙動画をインポート / 選択...",
             "prev_button": "⏮ 前へ",
             "pause_button": "一時停止",
@@ -153,7 +192,20 @@ public final class LocalizationManager: @unchecked Sendable {
             "clear_playlist": "プレイリストをクリア",
             "console_logs": "リアルタイムログ＆チャッター：",
             "status_ready": "ステータス：準備完了",
-            "status_playing": "ステータス：再生中 %@"
+            "status_playing": "ステータス：再生中 %@",
+            "menu_import": "壁紙をインポート...",
+            "menu_pause": "再生を一時停止",
+            "menu_resume": "再生を再開",
+            "menu_mute": "消音",
+            "menu_unmute": "消音解除",
+            "menu_audio_ducking": "オーディオダッキング (5%)",
+            "menu_auto_pause": "全画面自動一時停止",
+            "menu_auto_pause_active": "全画面自動一時停止 (有効)",
+            "menu_auto_pause_paused": "全画面自動一時停止 (一時停止中)",
+            "menu_open_dashboard": "コントロールパネルを開く...",
+            "menu_check_updates": "更新を確認...",
+            "menu_launch_login": "ログイン時に起動",
+            "menu_quit": "Dynamic Wallpaper Engine を終了"
         ]
     ]
 }

@@ -9,11 +9,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     var config: AppConfig = AppConfig()
     private var statusMenu: NSMenu?
 
+    private var importMenuItem: NSMenuItem?
     private var togglePlayPauseMenuItem: NSMenuItem?
     private var toggleMuteMenuItem: NSMenuItem?
     private var autoPauseMenuItem: NSMenuItem?
     private var audioDuckingMenuItem: NSMenuItem?
     private var launchAtLoginMenuItem: NSMenuItem?
+    private var openDashboardMenuItem: NSMenuItem?
+    private var checkForUpdatesMenuItem: NSMenuItem?
+    private var quitMenuItem: NSMenuItem?
 
     private let configURL: URL = {
         let fm = FileManager.default
@@ -176,19 +180,40 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func updateAutoPauseMenuItemState() {
+        let loc = LocalizationManager.shared
         let isEnabled = config.autoPauseOnFullscreen
         let isPaused = WallpaperController.shared.autoPauseEngine.isPaused
         
         autoPauseMenuItem?.state = isEnabled ? .on : .off
         if isEnabled {
             if isPaused {
-                autoPauseMenuItem?.title = "Auto-Pause on Fullscreen (Auto-Paused)"
+                autoPauseMenuItem?.title = loc.localized("menu_auto_pause_paused")
             } else {
-                autoPauseMenuItem?.title = "Auto-Pause on Fullscreen (Active)"
+                autoPauseMenuItem?.title = loc.localized("menu_auto_pause_active")
             }
         } else {
-            autoPauseMenuItem?.title = "Auto-Pause on Fullscreen"
+            autoPauseMenuItem?.title = loc.localized("menu_auto_pause")
         }
+    }
+
+    private func updateStatusMenuItemsLocalization() {
+        let loc = LocalizationManager.shared
+        importMenuItem?.title = loc.localized("menu_import")
+        
+        let isPlaying = WallpaperController.shared.playbackCore.isPlaying && !WallpaperController.shared.autoPauseEngine.isPaused
+        togglePlayPauseMenuItem?.title = isPlaying ? loc.localized("menu_pause") : loc.localized("menu_resume")
+        
+        let isMuted = WallpaperController.shared.playbackCore.player.isMuted
+        toggleMuteMenuItem?.title = isMuted ? loc.localized("menu_unmute") : loc.localized("menu_mute")
+        
+        audioDuckingMenuItem?.title = loc.localized("menu_audio_ducking")
+        
+        updateAutoPauseMenuItemState()
+        
+        openDashboardMenuItem?.title = loc.localized("menu_open_dashboard")
+        checkForUpdatesMenuItem?.title = loc.localized("menu_check_updates")
+        launchAtLoginMenuItem?.title = loc.localized("menu_launch_login")
+        quitMenuItem?.title = loc.localized("menu_quit")
     }
 
     private func setupStatusMenu() {
@@ -201,54 +226,70 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         updateStatusItemIcon()
 
         let menu = NSMenu()
-        menu.addItem(NSMenuItem(title: "Import Wallpaper...", action: #selector(chooseWallpaper), keyEquivalent: "i"))
+        let importItem = NSMenuItem(title: "", action: #selector(chooseWallpaper), keyEquivalent: "i")
+        importMenuItem = importItem
+        menu.addItem(importItem)
         
-        let playPauseItem = NSMenuItem(title: "Pause Playback", action: #selector(togglePlayPause), keyEquivalent: "p")
+        let playPauseItem = NSMenuItem(title: "", action: #selector(togglePlayPause), keyEquivalent: "p")
         togglePlayPauseMenuItem = playPauseItem
         menu.addItem(playPauseItem)
 
-        let muteItem = NSMenuItem(title: "Mute Sound", action: #selector(toggleMute), keyEquivalent: "m")
+        let muteItem = NSMenuItem(title: "", action: #selector(toggleMute), keyEquivalent: "m")
         toggleMuteMenuItem = muteItem
         menu.addItem(muteItem)
 
-        let duckingItem = NSMenuItem(title: "Audio Ducking (5% Volume)", action: #selector(toggleAudioDucking), keyEquivalent: "d")
+        let duckingItem = NSMenuItem(title: "", action: #selector(toggleAudioDucking), keyEquivalent: "d")
         duckingItem.state = config.isAudioDucked ? .on : .off
         audioDuckingMenuItem = duckingItem
         menu.addItem(duckingItem)
         
-        let autoPauseItem = NSMenuItem(title: "Auto-Pause on Fullscreen", action: #selector(toggleAutoPause), keyEquivalent: "a")
+        let autoPauseItem = NSMenuItem(title: "", action: #selector(toggleAutoPause), keyEquivalent: "a")
         autoPauseMenuItem = autoPauseItem
         menu.addItem(autoPauseItem)
-        updateAutoPauseMenuItemState()
 
-        let launchAtLoginItem = NSMenuItem(title: "Launch at Login", action: #selector(toggleLaunchAtLogin), keyEquivalent: "l")
+        let launchAtLoginItem = NSMenuItem(title: "", action: #selector(toggleLaunchAtLogin), keyEquivalent: "l")
         launchAtLoginItem.state = config.launchAtLogin ? .on : .off
         launchAtLoginMenuItem = launchAtLoginItem
         menu.addItem(launchAtLoginItem)
 
         menu.addItem(NSMenuItem.separator())
-        menu.addItem(NSMenuItem(title: "Open Dashboard", action: #selector(openDashboard), keyEquivalent: "o"))
-        menu.addItem(NSMenuItem(title: "Check for Updates...", action: #selector(checkForUpdatesClicked), keyEquivalent: "u"))
+        let openDashboardItem = NSMenuItem(title: "", action: #selector(openDashboard), keyEquivalent: "o")
+        openDashboardMenuItem = openDashboardItem
+        menu.addItem(openDashboardItem)
+
+        let checkUpdatesItem = NSMenuItem(title: "", action: #selector(checkForUpdatesClicked), keyEquivalent: "u")
+        checkForUpdatesMenuItem = checkUpdatesItem
+        menu.addItem(checkUpdatesItem)
+
         menu.addItem(NSMenuItem.separator())
-        menu.addItem(NSMenuItem(title: "Quit DynamicWallpaperEngine", action: #selector(quitApp), keyEquivalent: "q"))
+        let quitItem = NSMenuItem(title: "", action: #selector(quitApp), keyEquivalent: "q")
+        quitMenuItem = quitItem
+        menu.addItem(quitItem)
 
         statusMenu = menu
+        updateStatusMenuItemsLocalization()
         AppLogger.shared.info("[CHATTER] System Status Menu initialized successfully")
     }
 
     private func setupGlobalStateObservers() {
+        LocalizationManager.shared.onLanguageChanged = { [weak self] in
+            DispatchQueue.main.async {
+                self?.updateStatusMenuItemsLocalization()
+            }
+        }
+
         let center = NotificationCenter.default
         center.addObserver(forName: .wallpaperMuteStateDidChange, object: nil, queue: .main) { [weak self] notif in
             if let isMuted = notif.object as? Bool {
                 self?.config.isMuted = isMuted
-                self?.toggleMuteMenuItem?.title = isMuted ? "Unmute Sound" : "Mute Sound"
+                self?.toggleMuteMenuItem?.title = isMuted ? LocalizationManager.shared.localized("menu_unmute") : LocalizationManager.shared.localized("menu_mute")
                 self?.saveConfig()
             }
         }
 
         center.addObserver(forName: .wallpaperPlayPauseStateDidChange, object: nil, queue: .main) { [weak self] notif in
             if let isPlaying = notif.object as? Bool {
-                self?.togglePlayPauseMenuItem?.title = isPlaying ? "Pause Playback" : "Resume Playback"
+                self?.togglePlayPauseMenuItem?.title = isPlaying ? LocalizationManager.shared.localized("menu_pause") : LocalizationManager.shared.localized("menu_resume")
                 self?.updateStatusItemIcon()
                 self?.updateAutoPauseMenuItemState()
             }
