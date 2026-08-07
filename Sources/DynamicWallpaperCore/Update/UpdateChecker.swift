@@ -34,10 +34,11 @@ public final class UpdateChecker: @unchecked Sendable {
 
     /// Performs an asynchronous update check against GitHub API with full multi-language alert modals.
     public func performLocalizedUpdateCheck(explicitUserInitiated: Bool = true, completion: ((Result<ReleaseInfo, Error>) -> Void)? = nil) {
-        guard let url = URL(string: "https://api.github.com/repos/\(repositoryOwner)/\(repositoryName)/releases/latest") else { return }
+        guard let url = URL(string: "https://api.github.com/repos/\(repositoryOwner)/\(repositoryName)/releases") else { return }
 
         var request = URLRequest(url: url)
         request.setValue("application/vnd.github.v3+json", forHTTPHeaderField: "Accept")
+        request.setValue("DynamicWallpaperEngine/\(UpdateChecker.currentAppVersion)", forHTTPHeaderField: "User-Agent")
         request.timeoutInterval = 8.0
 
         URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
@@ -51,7 +52,21 @@ public final class UpdateChecker: @unchecked Sendable {
                 return
             }
 
-            guard let data = data, let release = try? JSONDecoder().decode(ReleaseInfo.self, from: data) else {
+            guard let data = data else {
+                let err = NSError(domain: "UpdateChecker", code: -1, userInfo: [NSLocalizedDescriptionKey: "No data received from release check"])
+                if explicitUserInitiated {
+                    self.presentErrorAlert(error: err)
+                }
+                completion?(.failure(err))
+                return
+            }
+
+            let release: ReleaseInfo
+            if let list = try? JSONDecoder().decode([ReleaseInfo].self, from: data), let first = list.first {
+                release = first
+            } else if let single = try? JSONDecoder().decode(ReleaseInfo.self, from: data) {
+                release = single
+            } else {
                 let err = NSError(domain: "UpdateChecker", code: -1, userInfo: [NSLocalizedDescriptionKey: "Invalid release data payload"])
                 if explicitUserInitiated {
                     self.presentErrorAlert(error: err)
