@@ -28,6 +28,9 @@ public struct AppConfig: Codable, Equatable {
     public var autoPauseOnLaunchpad: Bool
     public var autoPauseOnStageManager: Bool
     public var autoPauseOnFullscreen: Bool
+    public var autoPauseOnLowPowerMode: Bool
+    public var autoPauseOnBattery: Bool
+    public var autoPauseBatteryThreshold: Int
     public var wakeUpAction: WakeUpAction
     public var isAudioDucked: Bool
     public var lastWallpaperPath: String?
@@ -55,6 +58,9 @@ public struct AppConfig: Codable, Equatable {
         autoPauseOnLaunchpad: Bool = true,
         autoPauseOnStageManager: Bool = true,
         autoPauseOnFullscreen: Bool = false,
+        autoPauseOnLowPowerMode: Bool = true,
+        autoPauseOnBattery: Bool = false,
+        autoPauseBatteryThreshold: Int = 20,
         wakeUpAction: WakeUpAction = .resume,
         isAudioDucked: Bool = true,
         lastWallpaperPath: String? = nil,
@@ -76,6 +82,9 @@ public struct AppConfig: Codable, Equatable {
         self.autoPauseOnLaunchpad = autoPauseOnLaunchpad
         self.autoPauseOnStageManager = autoPauseOnStageManager
         self.autoPauseOnFullscreen = autoPauseOnFullscreen
+        self.autoPauseOnLowPowerMode = autoPauseOnLowPowerMode
+        self.autoPauseOnBattery = autoPauseOnBattery
+        self.autoPauseBatteryThreshold = autoPauseBatteryThreshold
         self.wakeUpAction = wakeUpAction
         self.isAudioDucked = isAudioDucked
         self.lastWallpaperPath = lastWallpaperPath
@@ -100,6 +109,9 @@ public struct AppConfig: Codable, Equatable {
         self.autoPauseOnLaunchpad = try container.decodeIfPresent(Bool.self, forKey: .autoPauseOnLaunchpad) ?? true
         self.autoPauseOnStageManager = try container.decodeIfPresent(Bool.self, forKey: .autoPauseOnStageManager) ?? true
         self.autoPauseOnFullscreen = try container.decodeIfPresent(Bool.self, forKey: .autoPauseOnFullscreen) ?? false
+        self.autoPauseOnLowPowerMode = try container.decodeIfPresent(Bool.self, forKey: .autoPauseOnLowPowerMode) ?? true
+        self.autoPauseOnBattery = try container.decodeIfPresent(Bool.self, forKey: .autoPauseOnBattery) ?? false
+        self.autoPauseBatteryThreshold = try container.decodeIfPresent(Int.self, forKey: .autoPauseBatteryThreshold) ?? 20
         self.wakeUpAction = try container.decodeIfPresent(WakeUpAction.self, forKey: .wakeUpAction) ?? .resume
         self.isAudioDucked = try container.decodeIfPresent(Bool.self, forKey: .isAudioDucked) ?? true
         self.lastWallpaperPath = try container.decodeIfPresent(String.self, forKey: .lastWallpaperPath)
