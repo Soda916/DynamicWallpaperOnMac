@@ -14,7 +14,7 @@ DynamicWallpaperCore.abi.json
 DynamicWallpaperCore.swiftdoc
 DynamicWallpaperCore.swiftmodule
 DynamicWallpaperCore.swiftsourceinfo
-DynamicWallpaperEngine
+/DynamicWallpaperEngine
 RunTests
 
 # macOS System Files

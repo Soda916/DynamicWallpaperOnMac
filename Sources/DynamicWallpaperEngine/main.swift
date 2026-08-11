@@ -339,13 +339,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func statusItemClicked() {
-        let isRightClick = NSApp.currentEvent?.type == .rightMouseUp ||
-                           NSApp.currentEvent?.type == .rightMouseDown ||
-                           NSApp.currentEvent?.modifierFlags.contains(.control) == true
-        if isRightClick {
+        let event = NSApp.currentEvent
+        let isRightClick = event?.type == .rightMouseUp ||
+                           event?.type == .rightMouseDown ||
+                           event?.modifierFlags.contains(.control) == true
+        let isOptionPressed = event?.modifierFlags.contains(.option) == true
+
+        if isOptionPressed && isRightClick {
+            AppLogger.shared.info("[STATUS-ITEM] Option + Right-Click detected. Triggering RAM Dump Diagnostic & Memory Purge...")
+            MemoryDumpManager.shared.presentRAMDumpAlert()
+        } else if isRightClick {
             openDashboard()
         } else {
-            if let button = statusItem?.button, let menu = statusMenu {
+            if isOptionPressed {
+                AppLogger.shared.info("[STATUS-ITEM] Option + Left-Click detected. Triggering RAM Dump Diagnostic & Memory Purge...")
+                MemoryDumpManager.shared.presentRAMDumpAlert()
+            } else if let button = statusItem?.button, let menu = statusMenu {
                 menu.popUp(positioning: nil, at: NSPoint(x: 0, y: button.frame.height + 4), in: button)
             }
         }
