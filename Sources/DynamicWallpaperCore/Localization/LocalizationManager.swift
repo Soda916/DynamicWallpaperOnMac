@@ -111,7 +111,9 @@ public final class LocalizationManager: @unchecked Sendable {
             "update_alert_no_update_title": "No Updates Available",
             "update_alert_no_update_info": "You are currently running the latest version of Dynamic Wallpaper Engine (%@).",
             "update_alert_error_title": "Update Check Failed",
-            "update_alert_ok": "OK"
+            "update_alert_ok": "OK",
+            "ram_dump_title": "📊 RAM Dump & Memory Optimization",
+            "ram_dump_info": "Process Memory Diagnostics:\n• Footprint RAM: %.2f MB (Before: %.2f MB)\n• Resident RAM: %.2f MB\n• Virtual Memory: %.2f MB\n\n✅ System Autorelease Pool & URL Cache purged successfully.\n\nDiagnostic JSON dumped to:\n%@"
         ],
         "zh-Hant": [
             "dashboard_title": "動態桌布引擎 - 控制台",
@@ -154,7 +156,9 @@ public final class LocalizationManager: @unchecked Sendable {
             "update_alert_no_update_title": "目前已是最新版本",
             "update_alert_no_update_info": "您目前使用的 Dynamic Wallpaper Engine (%@) 已是最新版本。",
             "update_alert_error_title": "檢查更新失敗",
-            "update_alert_ok": "確定"
+            "update_alert_ok": "確定",
+            "ram_dump_title": "📊 記憶體 Dump 與系統 Cache 清理診斷",
+            "ram_dump_info": "應用程式記憶體診斷與優化報告：\n• 實體記憶體佔用 (Footprint): %.2f MB (優化前: %.2f MB)\n• 駐留記憶體 (Resident RAM): %.2f MB\n• 虛擬記憶體 (Virtual RAM): %.2f MB\n\n✅ 已自動強行清理 Autorelease Pool 與系統 URL Cache 緩衝區。\n\n詳細 JSON 診斷檔已 Dump 至：\n%@"
         ],
         "zh-Hans": [
             "dashboard_title": "动态壁纸引擎 - 控制面板",
@@ -197,7 +201,9 @@ public final class LocalizationManager: @unchecked Sendable {
             "update_alert_no_update_title": "当前已是最新版本",
             "update_alert_no_update_info": "您当前使用的 Dynamic Wallpaper Engine (%@) 已是最新版本。",
             "update_alert_error_title": "检查更新失败",
-            "update_alert_ok": "确定"
+            "update_alert_ok": "确定",
+            "ram_dump_title": "📊 内存 Dump 与系统 Cache 清理诊断",
+            "ram_dump_info": "应用程序内存诊断与优化报告：\n• 物理内存占用 (Footprint): %.2f MB (优化前: %.2f MB)\n• 驻留内存 (Resident RAM): %.2f MB\n• 虚拟内存 (Virtual RAM): %.2f MB\n\n✅ 已自动强行清理 Autorelease Pool 与系统 URL Cache 缓冲区。\n\n详细 JSON 诊断文件已 Dump 至：\n%@"
         ],
         "ja": [
             "dashboard_title": "ダイナミック壁紙エンジン - コントロールパネル",
@@ -240,7 +246,9 @@ public final class LocalizationManager: @unchecked Sendable {
             "update_alert_no_update_title": "最新バージョンです",
             "update_alert_no_update_info": "現在使用中の Dynamic Wallpaper Engine (%@) は最新バージョンです。",
             "update_alert_error_title": "更新チェックに失敗しました",
-            "update_alert_ok": "OK"
+            "update_alert_ok": "OK",
+            "ram_dump_title": "📊 メモリ Dump およびキャッシュ最適化診断",
+            "ram_dump_info": "メモリ診断および最適化レポート：\n• 物理メモリ使用量 (Footprint): %.2f MB (最適化前: %.2f MB)\n• 常駐メモリ (Resident RAM): %.2f MB\n• 仮想メモリ (Virtual RAM): %.2f MB\n\n✅ Autorelease Pool および URL キャッシュのクリアが完了しました。\n\n詳細 JSON ログ出力先：\n%@"
         ]
     ]
 }
