@@ -7,6 +7,15 @@
 格式基於 [Keep a Changelog](https://keepachangelog.com/zh-TW/1.0.0/)，
 且本專案遵守 [語意化版本控制 (Semantic Versioning)](https://semver.org/spec/v2.0.0.html)。
 
+## [0.1.5-alpha] - 2026-08-12
+
+### 新增與重構 (Added & Refactored)
+- **記憶體 Dump 診斷與系統 Cache 自動清理 (`MemoryDumpManager`)**：
+  - 採用 Darwin 原生 `task_info` 核心 API 精確讀取 macOS 實體記憶體佔用 (Physical Memory Footprint, `phys_footprint`) 與駐留記憶體 (`resident_size`)。
+  - 支援產出時間戳記 JSON RAM Dump 診斷日誌 (`ram_dump_<timestamp>.json`) 並儲存至 `~/.dynamicwallpaper/Logs/`。
+  - 自動觸發系統 `URLCache` 與 `NSAutoreleasePool` 的強行深度清理，釋放無用記憶體與紋理快取。
+  - **捷徑觸發機制**：新增**壓住 Option (OPT) 鍵並按滑鼠右鍵點擊選單列圖示**，即可直接觸發實體記憶體 Dump 與診斷優化對話框。
+
 ## [0.1.4-alpha] - 2026-08-07
 
 ### 新增與重構 (Added & Refactored)
