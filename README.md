@@ -30,7 +30,7 @@ This project adheres to a strict hierarchy of design decisions:
 - 🖥️ **Native Desktop Windowing**: Layered below desktop icons with full mouse event pass-through and multi-space support.
 - ⚡ **Hardware Accelerated Decoding**: VideoToolbox and AVFoundation stream playback with minimal memory overhead.
 - ⏸️ **Intelligent Auto-Pause**: Automatically freezes playback and releases rendering resources during Mission Control, Launchpad, Stage Manager, Fullscreen Apps, or user-specified processes.
-- 🧩 **Extensible JavaScript Plugins**: Embedded QuickJS runtime enables desktop clocks, widgets, and dynamic interactive overlays without Node.js dependencies.
+- ~🧩 **Extensible JavaScript Plugins**: Embedded QuickJS runtime enables desktop clocks, widgets, and dynamic interactive overlays without Node.js dependencies.~ (still awating to develop)
 - 📦 **Open `.wallpaper` Format**: Self-contained wallpaper packages containing media, metadata, licenses, and previews.
 - 🖼️ **Multi-Monitor Support**: Configure unique wallpapers per monitor or synchronize across display arrays.
 - 🎵 **Synced Audio Control**: Integrated volume and mute controls directly accessible from the Menu Bar.
