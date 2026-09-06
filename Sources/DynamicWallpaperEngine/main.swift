@@ -343,7 +343,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let isRightClick = event?.type == .rightMouseUp ||
                            event?.type == .rightMouseDown ||
                            event?.modifierFlags.contains(.control) == true
-        let isOptionPressed = event?.modifierFlags.contains(.option) == true
+        let isOptionPressed = event?.modifierFlags.contains(.option) == true ||
+                              NSEvent.modifierFlags.contains(.option)
 
         if isOptionPressed && isRightClick {
             AppLogger.shared.info("[STATUS-ITEM] Option + Right-Click detected. Triggering RAM Dump Diagnostic & Memory Purge...")
@@ -971,14 +972,20 @@ final class DashboardWindowController: NSWindowController, NSTableViewDataSource
 
     private func appendConsoleLog(_ text: String) {
         let textWithNewline = text + "\n"
-        if let textStorage = consoleTextView.textStorage {
-            let attrString = NSAttributedString(string: textWithNewline, attributes: [
-                .font: NSFont.userFixedPitchFont(ofSize: 10) ?? NSFont.systemFont(ofSize: 10),
-                .foregroundColor: NSColor.systemGreen
-            ])
-            textStorage.append(attrString)
-            consoleTextView.scrollToEndOfDocument(nil)
+        guard let textStorage = consoleTextView.textStorage else { return }
+        let attrString = NSAttributedString(string: textWithNewline, attributes: [
+            .font: NSFont.userFixedPitchFont(ofSize: 10) ?? NSFont.systemFont(ofSize: 10),
+            .foregroundColor: NSColor.systemGreen
+        ])
+        textStorage.append(attrString)
+
+        // Prevent unbounded RAM growth by capping console text buffer (max 20,000 characters)
+        let maxBufferLength = 20_000
+        if textStorage.length > maxBufferLength {
+            let overflow = textStorage.length - maxBufferLength
+            textStorage.deleteCharacters(in: NSRange(location: 0, length: overflow))
         }
+        consoleTextView.scrollToEndOfDocument(nil)
     }
 
     private func formatTime(_ seconds: Double) -> String {
@@ -1020,14 +1027,6 @@ final class DashboardWindowController: NSWindowController, NSTableViewDataSource
                     self.timeLabel.stringValue = "00:00 / 00:00"
                 }
             }
-
-            let player = core.player
-            let rate = player.rate
-            let status = player.status.rawValue
-            let itemStatus = player.currentItem?.status.rawValue ?? -1
-            let itemError = player.currentItem?.error?.localizedDescription ?? "None"
-
-            AppLogger.shared.debug("[CHATTER] Player Monitor Tick: rate=\(rate), time=\(String(format: "%.2f", current))s/\(String(format: "%.2f", total))s, status=\(status), itemStatus=\(itemStatus), itemError=\(itemError)")
         }
     }
 

@@ -53,12 +53,20 @@ public final class DesktopWindowController: NSWindowController {
         contentView.wantsLayer = true
         guard let layer = contentView.layer else { return }
 
+        // Explicitly unbind player on existing playerLayer to release underlying VideoToolbox rendering resources
+        self.playerLayer?.player = nil
+        layer.sublayers?.forEach { sublayer in
+            if let avLayer = sublayer as? AVPlayerLayer {
+                avLayer.player = nil
+            }
+            sublayer.removeFromSuperlayer()
+        }
+
         let newPlayerLayer = AVPlayerLayer(player: player)
         newPlayerLayer.frame = layer.bounds
         newPlayerLayer.videoGravity = .resizeAspectFill
         newPlayerLayer.autoresizingMask = [.layerWidthSizable, .layerHeightSizable]
 
-        layer.sublayers?.forEach { $0.removeFromSuperlayer() }
         layer.addSublayer(newPlayerLayer)
         self.playerLayer = newPlayerLayer
 

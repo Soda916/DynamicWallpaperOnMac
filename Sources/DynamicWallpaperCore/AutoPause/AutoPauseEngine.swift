@@ -220,67 +220,69 @@ public final class AutoPauseEngine {
 
     /// Scans all visible on-screen windows across all active displays to detect if any display is covered by a fullscreen or maximized window.
     private func checkForFullscreenOrMaximizedWindows() -> Bool {
-        let options: CGWindowListOption = [.optionOnScreenOnly, .excludeDesktopElements]
-        guard let windowInfoList = CGWindowListCopyWindowInfo(options, kCGNullWindowID) as? [[String: Any]] else {
-            return false
-        }
-
-        let screens = NSScreen.screens
-        guard !screens.isEmpty else { return false }
-
-        let primaryScreenHeight = screens.first?.frame.height ?? 0
-
-        for info in windowInfoList {
-            // Filter out self process
-            guard let pid = info[kCGWindowOwnerPID as String] as? pid_t, pid != ownPID else {
-                continue
+        return autoreleasepool {
+            let options: CGWindowListOption = [.optionOnScreenOnly, .excludeDesktopElements]
+            guard let windowInfoList = CGWindowListCopyWindowInfo(options, kCGNullWindowID) as? [[String: Any]] else {
+                return false
             }
 
-            let ownerName = info[kCGWindowOwnerName as String] as? String ?? ""
-            
-            // Skip Finder Desktop background layer
-            if ownerName == "Finder" {
-                if let windowName = info[kCGWindowName as String] as? String, windowName == "Desktop" {
+            let screens = NSScreen.screens
+            guard !screens.isEmpty else { return false }
+
+            let primaryScreenHeight = screens.first?.frame.height ?? 0
+
+            for info in windowInfoList {
+                // Filter out self process
+                guard let pid = info[kCGWindowOwnerPID as String] as? pid_t, pid != ownPID else {
                     continue
                 }
-            }
 
-            // Inspect normal window layer (layer == 0)
-            guard let layer = info[kCGWindowLayer as String] as? Int, layer == 0 else {
-                continue
-            }
+                let ownerName = info[kCGWindowOwnerName as String] as? String ?? ""
+                
+                // Skip Finder Desktop background layer
+                if ownerName == "Finder" {
+                    if let windowName = info[kCGWindowName as String] as? String, windowName == "Desktop" {
+                        continue
+                    }
+                }
 
-            guard let boundsDict = info[kCGWindowBounds as String] as? [String: Any],
-                  let quartzBounds = CGRect(dictionaryRepresentation: boundsDict as CFDictionary) else {
-                continue
-            }
+                // Inspect normal window layer (layer == 0)
+                guard let layer = info[kCGWindowLayer as String] as? Int, layer == 0 else {
+                    continue
+                }
 
-            let cocoaBounds = CGRect(
-                x: quartzBounds.origin.x,
-                y: primaryScreenHeight - (quartzBounds.origin.y + quartzBounds.size.height),
-                width: quartzBounds.size.width,
-                height: quartzBounds.size.height
-            )
+                guard let boundsDict = info[kCGWindowBounds as String] as? [String: Any],
+                      let quartzBounds = CGRect(dictionaryRepresentation: boundsDict as CFDictionary) else {
+                    continue
+                }
 
-            for screen in screens {
-                let screenFrame = screen.frame
-                let visibleFrame = screen.visibleFrame
+                let cocoaBounds = CGRect(
+                    x: quartzBounds.origin.x,
+                    y: primaryScreenHeight - (quartzBounds.origin.y + quartzBounds.size.height),
+                    width: quartzBounds.size.width,
+                    height: quartzBounds.size.height
+                )
 
-                // Check intersection or containment with screen
-                let windowCenter = CGPoint(x: cocoaBounds.midX, y: cocoaBounds.midY)
-                if screenFrame.contains(windowCenter) || screenFrame.intersects(cocoaBounds) {
-                    let isFullscreen = cocoaBounds.width >= screenFrame.width - 15 && cocoaBounds.height >= screenFrame.height - 15
-                    let isMaximized = cocoaBounds.width >= visibleFrame.width - 25 && cocoaBounds.height >= visibleFrame.height - 25
+                for screen in screens {
+                    let screenFrame = screen.frame
+                    let visibleFrame = screen.visibleFrame
 
-                    if isFullscreen || isMaximized {
-                        AppLogger.shared.debug("[AUTOPAUSE] Match found: '\(ownerName)' (PID: \(pid)) on screen '\(screen.localizedName)' bounds=(\(cocoaBounds.width)x\(cocoaBounds.height)) screen=(\(screenFrame.width)x\(screenFrame.height)) FS=\(isFullscreen) Max=\(isMaximized)")
-                        return true
+                    // Check intersection or containment with screen
+                    let windowCenter = CGPoint(x: cocoaBounds.midX, y: cocoaBounds.midY)
+                    if screenFrame.contains(windowCenter) || screenFrame.intersects(cocoaBounds) {
+                        let isFullscreen = cocoaBounds.width >= screenFrame.width - 15 && cocoaBounds.height >= screenFrame.height - 15
+                        let isMaximized = cocoaBounds.width >= visibleFrame.width - 25 && cocoaBounds.height >= visibleFrame.height - 25
+
+                        if isFullscreen || isMaximized {
+                            AppLogger.shared.debug("[AUTOPAUSE] Match found: '\(ownerName)' (PID: \(pid)) on screen '\(screen.localizedName)' bounds=(\(cocoaBounds.width)x\(cocoaBounds.height)) screen=(\(screenFrame.width)x\(screenFrame.height)) FS=\(isFullscreen) Max=\(isMaximized)")
+                            return true
+                        }
                     }
                 }
             }
-        }
 
-        return false
+            return false
+        }
     }
 }
 

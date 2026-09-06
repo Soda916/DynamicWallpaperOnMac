@@ -183,6 +183,9 @@ public final class MediaPlaybackCore: @unchecked Sendable {
         self.currentURL = url
         let asset = AVURLAsset(url: url, options: [AVURLAssetPreferPreciseDurationAndTimingKey: false])
         let item = AVPlayerItem(asset: asset)
+        // Constrain forward buffer duration to 2.0 seconds to prevent AVFoundation from over-allocating frame buffers into RAM
+        item.preferredForwardBufferDuration = 2.0
+        item.canUseNetworkResourcesForLiveStreamingWhilePaused = false
 
         player.replaceCurrentItem(with: item)
         setupLooping(for: item)
