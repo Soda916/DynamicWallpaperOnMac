@@ -218,7 +218,9 @@ public final class AutoPauseEngine {
         }
     }
 
-    /// Scans all visible on-screen windows across all active displays to detect if any display is covered by a fullscreen or maximized window.
+    /// Scans visible windows across all active displays.
+    /// In a multi-monitor setup, auto-pause only triggers if ALL active displays are covered by fullscreen/maximized windows.
+    /// If at least one display has visible desktop wallpaper, playback continues uninterrupted.
     private func checkForFullscreenOrMaximizedWindows() -> Bool {
         return autoreleasepool {
             let options: CGWindowListOption = [.optionOnScreenOnly, .excludeDesktopElements]
@@ -230,6 +232,7 @@ public final class AutoPauseEngine {
             guard !screens.isEmpty else { return false }
 
             let primaryScreenHeight = screens.first?.frame.height ?? 0
+            var coveredScreenIDs = Set<CGDirectDisplayID>()
 
             for info in windowInfoList {
                 // Filter out self process
@@ -264,6 +267,11 @@ public final class AutoPauseEngine {
                 )
 
                 for screen in screens {
+                    let screenID = screen.displayID
+                    if coveredScreenIDs.contains(screenID) {
+                        continue
+                    }
+
                     let screenFrame = screen.frame
                     let visibleFrame = screen.visibleFrame
 
@@ -274,13 +282,23 @@ public final class AutoPauseEngine {
                         let isMaximized = cocoaBounds.width >= visibleFrame.width - 25 && cocoaBounds.height >= visibleFrame.height - 25
 
                         if isFullscreen || isMaximized {
-                            AppLogger.shared.debug("[AUTOPAUSE] Match found: '\(ownerName)' (PID: \(pid)) on screen '\(screen.localizedName)' bounds=(\(cocoaBounds.width)x\(cocoaBounds.height)) screen=(\(screenFrame.width)x\(screenFrame.height)) FS=\(isFullscreen) Max=\(isMaximized)")
-                            return true
+                            coveredScreenIDs.insert(screenID)
+                            AppLogger.shared.debug("[AUTOPAUSE] Screen '\(screen.localizedName)' (ID: \(screenID)) covered by '\(ownerName)' (PID: \(pid)) bounds=(\(cocoaBounds.width)x\(cocoaBounds.height))")
                         }
                     }
                 }
+
+                // If ALL active screens are covered by fullscreen/maximized windows, trigger pause
+                if coveredScreenIDs.count >= screens.count {
+                    AppLogger.shared.debug("[AUTOPAUSE] All connected screens (\(screens.count)/\(screens.count)) are covered by fullscreen/maximized windows -> Auto-pause triggered")
+                    return true
+                }
             }
 
+            // At least one connected display still has visible desktop wallpaper -> Keep playing!
+            if !coveredScreenIDs.isEmpty {
+                AppLogger.shared.debug("[AUTOPAUSE] \(coveredScreenIDs.count)/\(screens.count) screen(s) covered. Wallpaper remains exposed on at least one display -> Keep playing")
+            }
             return false
         }
     }
