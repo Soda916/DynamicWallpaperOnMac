@@ -6,6 +6,26 @@
         <description>Most recent updates for DynamicWallpaperEngine</description>
         <language>zh-TW</language>
         <item>
+            <title>DynamicWallpaperEngine v0.1.5-alpha</title>
+            <description><![CDATA[
+<h2>✨ DynamicWallpaperEngine v0.1.5-alpha 正式發布</h2>
+<ul>
+  <li><b>記憶體 Dump 診斷與系統 Cache 自動清理 (MemoryDumpManager)</b>：採用 Darwin 原生 task_info 核心 API 精確讀取實體記憶體佔用 (Footprint RAM) 與駐留記憶體，產出 JSON 診斷檔。</li>
+  <li><b>Option + 右鍵快捷觸發</b>：支援按住 Option (OPT) 鍵並按滑鼠右鍵點擊選單列圖示，立即觸發 RAM Dump 與快取清理對話框。</li>
+  <li><b>AVFoundation 緩衝區與記憶體膨脹修復</b>：限制 forward buffer duration (2.0s) 並在換片時解綁舊 AVPlayerLayer，杜絕影格堆疊。</li>
+  <li><b>實時日誌緩衝區上限與頻率節流</b>：控制台日誌長度上限保護 (20,000 字元) 並移除 500ms 高頻監控輪詢輸出，防止長時間運行膨脹。</li>
+  <li><b>CoreGraphics 視窗檢測自動釋放池</b>：全螢幕檢測包覆 autoreleasepool，瞬時釋放 CFDictionary 暫存物件。</li>
+</ul>
+            ]]></description>
+            <sparkle:releaseNotesLink>https://github.com/Soda916/DynamicWallpaperOnMac/releases/tag/v0.1.5-alpha</sparkle:releaseNotesLink>
+            <pubDate>Sun, 06 Sep 2026 14:30:00 +0800</pubDate>
+            <enclosure url="https://github.com/Soda916/DynamicWallpaperOnMac/releases/download/v0.1.5-alpha/DynamicWallpaperEngine-v0.1.5-alpha-macOS-Universal.zip"
+                       sparkle:version="0.1.5"
+                       sparkle:shortVersionString="0.1.5-alpha"
+                       length="4180000"
+                       type="application/octet-stream" />
+        </item>
+        <item>
             <title>DynamicWallpaperEngine v0.1.4-alpha</title>
             <description><![CDATA[
 <h2>✨ DynamicWallpaperEngine v0.1.4-alpha 正式發布</h2>

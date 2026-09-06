@@ -43,3 +43,11 @@ user_scratch/
 /*.png
 /*.jpg
 /*.jpeg
+
+# Auto-added by Discord Agent to prevent committing temporary uploads
+*tmp*
+.tmp_uploads/
+
+# Auto-added by Discord Agent to prevent committing temporary uploads
+*.log.*
+logs/

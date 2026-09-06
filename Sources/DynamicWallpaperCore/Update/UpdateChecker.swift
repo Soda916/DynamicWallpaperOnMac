@@ -22,7 +22,7 @@ public final class UpdateChecker: @unchecked Sendable {
     }
 
     public static var currentAppVersion: String {
-        return Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.1.4-alpha"
+        return Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.1.5-alpha"
     }
 
     private init() {}
