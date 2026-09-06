@@ -57,6 +57,18 @@ public final class WallpaperController: @unchecked Sendable {
                 }
             }
         }
+
+        NotificationCenter.default.addObserver(
+            forName: NSApplication.didChangeScreenParametersNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            guard let self = self else { return }
+            AppLogger.shared.info("[WALLPAPER-CONTROLLER] Display parameters changed (Sidecar/hotplug). Synchronizing desktop layers & auto-pause...")
+            self.displayManager.updateScreens(with: self.playbackCore.player)
+            self.autoPauseEngine.dumpScreenTopology()
+            self.autoPauseEngine.evaluateAutoPauseConditions()
+        }
     }
 
     private func setupAutoPauseIntegration() {

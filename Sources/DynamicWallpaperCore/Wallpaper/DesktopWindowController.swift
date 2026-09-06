@@ -3,7 +3,7 @@ import AVFoundation
 
 /// Manages a borderless, non-activating desktop layer window for playing wallpaper media on a specific NSScreen.
 public final class DesktopWindowController: NSWindowController {
-    public let targetScreen: NSScreen
+    public private(set) var targetScreen: NSScreen
     private var playerLayer: AVPlayerLayer?
 
     public init(screen: NSScreen) {
@@ -70,6 +70,21 @@ public final class DesktopWindowController: NSWindowController {
         layer.addSublayer(newPlayerLayer)
         self.playerLayer = newPlayerLayer
 
+        window.orderFrontRegardless()
+    }
+
+    /// Dynamically reposition and resize desktop window and AVPlayerLayer to match updated display topology or resolution (e.g. Sidecar / hotplug).
+    public func updateScreenAndFrame(screen: NSScreen) {
+        self.targetScreen = screen
+        guard let window = window, let contentView = window.contentView else { return }
+
+        window.setFrame(screen.frame, display: true)
+        if let layer = contentView.layer {
+            CATransaction.begin()
+            CATransaction.setDisableActions(true)
+            playerLayer?.frame = layer.bounds
+            CATransaction.commit()
+        }
         window.orderFrontRegardless()
     }
 
