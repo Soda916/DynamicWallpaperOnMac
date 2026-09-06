@@ -17,6 +17,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var launchAtLoginMenuItem: NSMenuItem?
     private var openDashboardMenuItem: NSMenuItem?
     private var checkForUpdatesMenuItem: NSMenuItem?
+    private var restartMenuItem: NSMenuItem?
     private var quitMenuItem: NSMenuItem?
 
     private let configURL: URL = {
@@ -213,6 +214,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         openDashboardMenuItem?.title = loc.localized("menu_open_dashboard")
         checkForUpdatesMenuItem?.title = loc.localized("menu_check_updates")
         launchAtLoginMenuItem?.title = loc.localized("menu_launch_login")
+        restartMenuItem?.title = loc.localized("menu_restart")
         quitMenuItem?.title = loc.localized("menu_quit")
     }
 
@@ -262,6 +264,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(checkUpdatesItem)
 
         menu.addItem(NSMenuItem.separator())
+        let restartItem = NSMenuItem(title: "", action: #selector(restartEngine), keyEquivalent: "w")
+        restartMenuItem = restartItem
+        menu.addItem(restartItem)
+
         let quitItem = NSMenuItem(title: "", action: #selector(quitApp), keyEquivalent: "q")
         quitMenuItem = quitItem
         menu.addItem(quitItem)
@@ -412,6 +418,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func checkForUpdatesClicked() {
         UpdateChecker.shared.performLocalizedUpdateCheck(explicitUserInitiated: true)
+    }
+
+    @objc private func restartEngine() {
+        AppLogger.shared.info("[CHATTER] Restarting Dynamic Wallpaper Engine via Menu Bar (CMD+W)...")
+        saveConfig()
+
+        let pid = NSRunningApplication.current.processIdentifier
+        let relaunchCommand: String
+        if Bundle.main.bundleURL.pathExtension == "app" {
+            let path = Bundle.main.bundleURL.path
+            relaunchCommand = "while /bin/kill -0 \(pid) 2>/dev/null; do /bin/sleep 0.1; done; /usr/bin/open -n \"\(path)\""
+        } else {
+            let path = Bundle.main.executableURL?.path ?? CommandLine.arguments[0]
+            relaunchCommand = "while /bin/kill -0 \(pid) 2>/dev/null; do /bin/sleep 0.1; done; \"\(path)\""
+        }
+
+        let task = Process()
+        task.executableURL = URL(fileURLWithPath: "/bin/sh")
+        task.arguments = ["-c", relaunchCommand]
+        try? task.run()
+
+        NSApp.terminate(nil)
     }
 
     @objc private func quitApp() {
