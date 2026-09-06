@@ -7,14 +7,29 @@
 格式基於 [Keep a Changelog](https://keepachangelog.com/zh-TW/1.0.0/)，
 且本專案遵守 [語意化版本控制 (Semantic Versioning)](https://semver.org/spec/v2.0.0.html)。
 
-## [0.1.5-alpha] - 2026-08-12
+## [0.1.5-alpha] - 2026-09-06
 
 ### 新增與重構 (Added & Refactored)
+- **Sidecar 隨身螢幕與多顯示器動態拓撲修正 (`DisplayManager` & `DesktopWindowController`)**：
+  - 改以系統硬體唯一 `CGDirectDisplayID` 追蹤與管理所有螢幕視窗，避免 `NSScreen` 實例重建導致的指針失效。
+  - 支援外接螢幕、AirPlay 與 Sidecar 隨身螢幕熱插拔自動掛載與解除桌布視窗。
+  - 使用 `CATransaction.setDisableActions(true)` 達成視窗與 `AVPlayerLayer` 尺寸毫秒級同步，杜絕黑屏與視窗縮小跑位問題。
+  - 加入 0.5s 虛擬 Framebuffer 延遲穩定二次刷新，確保 Sidecar 連線初始化正確性。
+- **多螢幕全螢幕自動暫停邏輯修正 (`AutoPauseEngine`)**：
+  - 改採覆蓋集合追蹤 (`coveredScreenIDs: Set<CGDirectDisplayID>`)。
+  - 唯有在所有已連線螢幕皆被全螢幕或最大化視窗完全遮擋時才觸發自動暫停；只要任一螢幕仍露有桌面動態桌布，引擎便保持流暢播放。
+- **選單列重啟動態桌布引擎與快捷鍵 `CMD+W` (`main.swift` & `LocalizationManager`)**：
+  - 於選單列新增「重啟動態桌布引擎」項目與 `⌘W` 快捷鍵。
+  - 自動保存偏好設定 (`saveConfig()`) 並於背景平順熱重啟。
+  - 支援繁體中文、簡體中文、英文與日文多語言切換。
 - **記憶體 Dump 診斷與系統 Cache 自動清理 (`MemoryDumpManager`)**：
   - 採用 Darwin 原生 `task_info` 核心 API 精確讀取 macOS 實體記憶體佔用 (Physical Memory Footprint, `phys_footprint`) 與駐留記憶體 (`resident_size`)。
   - 支援產出時間戳記 JSON RAM Dump 診斷日誌 (`ram_dump_<timestamp>.json`) 並儲存至 `~/.dynamicwallpaper/Logs/`。
   - 自動觸發系統 `URLCache` 與 `NSAutoreleasePool` 的強行深度清理，釋放無用記憶體與紋理快取。
   - **捷徑觸發機制**：新增**壓住 Option (OPT) 鍵並按滑鼠右鍵點擊選單列圖示**，即可直接觸發實體記憶體 Dump 與診斷優化對話框。
+- **AVFoundation 緩衝區與控制台日誌防膨脹節流**：
+  - 設定 forward buffer duration 上限 (2.0s) 並在換片時解綁舊 AVPlayerLayer，杜絕影格堆疊。
+  - 限制控制台實時日誌長度上限 (20,000 字元) 並移除 500ms 高頻監控輪詢輸出。
 
 ## [0.1.4-alpha] - 2026-08-07
 

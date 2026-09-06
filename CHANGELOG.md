@@ -7,14 +7,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.1.5-alpha] - 2026-08-12
+## [0.1.5-alpha] - 2026-09-06
 
 ### Added & Refactored
+- **Sidecar & Dynamic Display Topology Handling (`DisplayManager` & `DesktopWindowController`)**:
+  - Keyed all desktop window controllers by unique `CGDirectDisplayID` rather than fragile `NSScreen` instances to survive dynamic display reallocations.
+  - Dynamically attaches and detaches desktop windows upon display hotplugging (e.g. Sidecar, AirPlay, external monitors).
+  - Synchronizes window frames and `AVPlayerLayer` dimensions instantly without layout glitching via `CATransaction.setDisableActions(true)`.
+  - Added a 0.5s delayed secondary stabilization pass for Sidecar virtual display framebuffers.
+- **Multi-Monitor Fullscreen Auto-Pause Semantics (`AutoPauseEngine`)**:
+  - Auto-pause now uses a covered screen ID set (`coveredScreenIDs: Set<CGDirectDisplayID>`).
+  - Playback only pauses when **all** active connected displays are covered by fullscreen or maximized windows. If any monitor has visible desktop space, dynamic wallpaper continues uninterrupted.
+- **Menu Bar Restart Engine Shortcut (`main.swift` & `LocalizationManager`)**:
+  - Added "Restart Dynamic Wallpaper Engine" menu item with `CMD+W` (`⌘W`) shortcut.
+  - Automatically persists user preferences (`saveConfig()`) and gracefully relaunches the process.
+  - Fully localized in English, Traditional Chinese, Simplified Chinese, and Japanese.
 - **RAM Dump & Memory Diagnostic Purge (`MemoryDumpManager`)**:
   - Implemented Darwin `task_info` API to measure actual macOS Physical Memory Footprint (`phys_footprint`) and Resident Memory Size (`resident_size`).
   - Added RAM dump diagnostic reporting that writes timestamped JSON logs (`ram_dump_<timestamp>.json`) to `~/.dynamicwallpaper/Logs/`.
   - Automated system `URLCache` flushing and `NSAutoreleasePool` cache purging to reclaim transient memory allocations.
   - Added shortcut trigger: **Hold Option (OPT) key + Right-Click on Status Bar Icon** to trigger immediate RAM Dump & Memory Purge diagnostic modal.
+- **AVFoundation Forward Buffer Limiting & Console Log Throttling**:
+  - Bound forward playback buffer to 2.0s and decoupled old `AVPlayerLayer` instances during video transitions to avoid memory buildup.
+  - Added 20,000 character maximum buffer limit to real-time console logs and removed high-frequency polling chatter.
 
 ## [0.1.4-alpha] - 2026-08-07
 

@@ -10,6 +10,9 @@
             <description><![CDATA[
 <h2>✨ DynamicWallpaperEngine v0.1.5-alpha 正式發布</h2>
 <ul>
+  <li><b>Sidecar 隨身螢幕與多顯示器動態拓撲修正</b>：以 CGDirectDisplayID 全面追蹤硬體連線，支援動態熱插拔與 Sidecar 延遲平穩刷新，徹底解決螢幕裁切與渲染錯位問題。</li>
+  <li><b>多螢幕全螢幕自動暫停邏輯修正</b>：改採覆蓋集合判定，唯有所有作用中螢幕皆被全螢幕/最大化遮擋時才暫停，只要任一螢幕顯露桌面桌布即保持流暢播放。</li>
+  <li><b>選單列重啟動態桌布引擎 (CMD+W)</b>：新增一鍵平順熱重啟功能與 ⌘W 快捷鍵，自動保存當前偏好並重啟引擎。</li>
   <li><b>記憶體 Dump 診斷與系統 Cache 自動清理 (MemoryDumpManager)</b>：採用 Darwin 原生 task_info 核心 API 精確讀取實體記憶體佔用 (Footprint RAM) 與駐留記憶體，產出 JSON 診斷檔。</li>
   <li><b>Option + 右鍵快捷觸發</b>：支援按住 Option (OPT) 鍵並按滑鼠右鍵點擊選單列圖示，立即觸發 RAM Dump 與快取清理對話框。</li>
   <li><b>AVFoundation 緩衝區與記憶體膨脹修復</b>：限制 forward buffer duration (2.0s) 並在換片時解綁舊 AVPlayerLayer，杜絕影格堆疊。</li>
@@ -18,11 +21,11 @@
 </ul>
             ]]></description>
             <sparkle:releaseNotesLink>https://github.com/Soda916/DynamicWallpaperOnMac/releases/tag/v0.1.5-alpha</sparkle:releaseNotesLink>
-            <pubDate>Sun, 06 Sep 2026 14:30:00 +0800</pubDate>
+            <pubDate>Sun, 06 Sep 2026 14:40:00 +0800</pubDate>
             <enclosure url="https://github.com/Soda916/DynamicWallpaperOnMac/releases/download/v0.1.5-alpha/DynamicWallpaperEngine-v0.1.5-alpha-macOS-Universal.zip"
                        sparkle:version="0.1.5"
                        sparkle:shortVersionString="0.1.5-alpha"
-                       length="4194221"
+                       length="4213007"
                        type="application/octet-stream" />
         </item>
         <item>
