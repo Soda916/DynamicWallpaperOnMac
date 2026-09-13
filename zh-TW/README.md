@@ -5,7 +5,7 @@
 [![macOS Sonoma+](https://img.shields.io/badge/macOS-14.0%2B%20Sonoma-blue.svg?style=flat&logo=apple)](https://www.apple.com/macos/)
 [![Universal Binary](https://img.shields.io/badge/Architecture-Universal%20(Apple%20Silicon%20%2B%20Intel)-brightgreen.svg)](https://developer.apple.com/documentation/apple-silicon/)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](../LICENSE)
-[![CI Build](https://github.com/your-org/DynamicWallpaperEngine/actions/workflows/ci.yml/badge.svg)](https://github.com/your-org/DynamicWallpaperEngine/actions)
+[![CI Build](https://github.com/Soda916/DynamicWallpaperOnMac/actions/workflows/ci.yml/badge.svg)](https://github.com/Soda916/DynamicWallpaperOnMac/actions)
 
 **DynamicWallpaperEngine** 是一個高效能、低資源消耗、可擴展且開源的 macOS 原生動態桌布執行階段與外掛平台。本專案嚴格使用 Swift、AppKit、SwiftUI 以及 Apple 原生的 VideoToolbox 硬體解碼進行開發，能在不犧牲電池續航力或系統效能的情況下，提供極致流暢的桌面動態桌布體驗。
 
@@ -75,8 +75,8 @@
 
 ### 建置應用程式 (Application Bundle)
 ```bash
-git clone https://github.com/your-org/DynamicWallpaperEngine.git
-cd DynamicWallpaperEngine
+git clone https://github.com/Soda916/DynamicWallpaperOnMac.git
+cd DynamicWallpaperOnMac
 
 # 建置 macOS .app bundle、發佈 zip 與 dmg 映像檔
 chmod +x scripts/build_app.sh
