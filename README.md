@@ -75,7 +75,7 @@ This project adheres to a strict hierarchy of design decisions:
 
 ### Building the Application Bundle
 ```bash
-git clone https://github.com/Soda916/DynamicWallpaperEngine.git
+git clone https://github.com/Soda916/DynamicWallpaperOnMac.git
 cd DynamicWallpaperEngine
 
 # Build macOS .app bundle, release zip, and dmg
