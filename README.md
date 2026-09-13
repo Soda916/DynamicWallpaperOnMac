@@ -5,7 +5,7 @@
 [![macOS Sonoma+](https://img.shields.io/badge/macOS-14.0%2B%20Sonoma-blue.svg?style=flat&logo=apple)](https://www.apple.com/macos/)
 [![Universal Binary](https://img.shields.io/badge/Architecture-Universal%20(Apple%20Silicon%20%2B%20Intel)-brightgreen.svg)](https://developer.apple.com/documentation/apple-silicon/)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
-[![CI Build](https://github.com/your-org/DynamicWallpaperEngine/actions/workflows/ci.yml/badge.svg)](https://github.com/your-org/DynamicWallpaperEngine/actions)
+[![CI Build](https://github.com/Soda916/DynamicWallpaperEngine/actions/workflows/ci.yml/badge.svg)](https://github.com/Soda916/DynamicWallpaperEngine/actions)
 
 **DynamicWallpaperEngine** is a high-performance, low-resource, extensible, open-source macOS native live wallpaper runtime and plugin platform. Built strictly with Swift, AppKit, SwiftUI, and Apple Native VideoToolbox hardware decoding, it offers an exceptionally smooth desktop live wallpaper experience without sacrificing battery life or system performance.
 
@@ -75,7 +75,7 @@ This project adheres to a strict hierarchy of design decisions:
 
 ### Building the Application Bundle
 ```bash
-git clone https://github.com/your-org/DynamicWallpaperEngine.git
+git clone https://github.com/Soda916/DynamicWallpaperEngine.git
 cd DynamicWallpaperEngine
 
 # Build macOS .app bundle, release zip, and dmg
