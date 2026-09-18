@@ -3,12 +3,12 @@
 # Exit on error
 set -e
 
-echo "Starting release build process for Dynamic Wallpaper Engine v0.1.5-alpha..."
+echo "Starting release build process for Dynamic Wallpaper Engine v0.1.6-alpha..."
 
 # Directories
-PROJECT_DIR="/Users/dustlee/program/DynamicWallPaper"
+PROJECT_DIR="/Users/dustlee/program/DynamicWallpaper"
 BUILD_DIR="$PROJECT_DIR/build"
-VERSION="0.1.5-alpha"
+VERSION="0.1.6-alpha"
 
 # Clean build directory
 echo "Cleaning build directory..."

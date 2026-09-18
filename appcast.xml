@@ -6,6 +6,27 @@
         <description>Most recent updates for DynamicWallpaperEngine</description>
         <language>zh-TW</language>
         <item>
+            <title>DynamicWallpaperEngine v0.1.6-alpha</title>
+            <description><![CDATA[
+<h2>✨ DynamicWallpaperEngine v0.1.6-alpha 正式發布</h2>
+<ul>
+  <li><b>非同步切換競態防禦與 Crash 修復</b>：引進世代識別鎖 (Generation Token) 機制，徹底解決連續點擊切換、隨機切換或換軌時多工操作 AVPlayerItem 導致的 EXC_BAD_ACCESS 崩潰。</li>
+  <li><b>集中化路徑傳遞修復</b>：確保影片集中化後的 effectiveURL 正確傳入解碼管線與播放清單，避免路徑對應錯亂。</li>
+  <li><b>全螢幕圖層渲染效能重構 (DesktopWindowController)</b>：重用現有 AVPlayerLayer，消除每次換片時重複從 CALayer 樹暴力銷毀與重新分配圖層的開銷與畫面閃爍。</li>
+  <li><b>播放管線平滑換軌 (MediaPlaybackCore)</b>：移除換軌時不必要的置空過渡 (replaceCurrentItem with nil)，消除 KVO 狀態與進度條抖動。</li>
+  <li><b>電源與休眠語義規範澄清 (AppConfig)</b>：代碼層面明確標註本專案純粹被動接收系統喚醒通知，絕無調用 IOPMAssertion 或進行系統級強制喚醒操作。</li>
+  <li><b>Release 發布建置修復</b>：修正 Swift Release 模式下的型別解包語法，確保 CI/CD 與發布編譯穩定通過。</li>
+</ul>
+            ]]></description>
+            <sparkle:releaseNotesLink>https://github.com/Soda916/DynamicWallpaperOnMac/releases/tag/v0.1.6-alpha</sparkle:releaseNotesLink>
+            <pubDate>Fri, 18 Sep 2026 14:35:00 +0800</pubDate>
+            <enclosure url="https://github.com/Soda916/DynamicWallpaperOnMac/releases/download/v0.1.6-alpha/DynamicWallpaperEngine-v0.1.6-alpha-macOS-Universal.zip"
+                       sparkle:version="0.1.6"
+                       sparkle:shortVersionString="0.1.6-alpha"
+                       length="4220000"
+                       type="application/octet-stream" />
+        </item>
+        <item>
             <title>DynamicWallpaperEngine v0.1.5-alpha</title>
             <description><![CDATA[
 <h2>✨ DynamicWallpaperEngine v0.1.5-alpha 正式發布</h2>
