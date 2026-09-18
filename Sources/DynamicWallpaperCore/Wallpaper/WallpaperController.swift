@@ -27,6 +27,7 @@ public final class WallpaperController: @unchecked Sendable {
     public private(set) var playbackMode: PlaybackMode = .single
 
     private var autoPauseObserver: NSObjectProtocol?
+    private var currentImportGeneration: Int = 0
 
     private init() {
         setupAutoPauseIntegration()
@@ -220,7 +221,9 @@ public final class WallpaperController: @unchecked Sendable {
     }
 
     public func importAndApplyWallpaper(from url: URL, storageMode: MediaStorageMode = .symlink, completion: ((Result<URL, Error>) -> Void)? = nil) {
-        AppLogger.shared.info("[CHATTER] WallpaperController: Received user request to import wallpaper: \(url.path) [StorageMode: \(storageMode.rawValue)]")
+        currentImportGeneration += 1
+        let generation = currentImportGeneration
+        AppLogger.shared.info("[CHATTER] WallpaperController: Received user request to import wallpaper (generation: \(generation)): \(url.path) [StorageMode: \(storageMode.rawValue)]")
 
         // Centralize media storage under ~/.dynamicwallpaper/media/
         let effectiveURL: URL
@@ -273,9 +276,13 @@ public final class WallpaperController: @unchecked Sendable {
 
             WallpaperPackageImporter.shared.convertGIFToHEVCVideo(gifURL: url, outputVideoURL: cacheVideoURL) { [weak self] result in
                 DispatchQueue.main.async {
+                    guard let self = self, generation == self.currentImportGeneration else {
+                        AppLogger.shared.info("[PLAYLIST] Discarded stale GIF conversion result (generation: \(generation) vs current: \(self?.currentImportGeneration ?? 0))")
+                        return
+                    }
                     switch result {
                     case .success(let convertedVideoURL):
-                        self?.applyVideo(url: convertedVideoURL)
+                        self.applyVideo(url: convertedVideoURL)
                         completion?(.success(convertedVideoURL))
                     case .failure(let error):
                         AppLogger.shared.error("[CHATTER] Failed to convert GIF: \(error.localizedDescription)")
@@ -284,23 +291,31 @@ public final class WallpaperController: @unchecked Sendable {
                 }
             }
         } else {
-            AppLogger.shared.info("[CHATTER] Inspecting video codec subtype via AVFoundation for \(url.lastPathComponent)...")
-            WallpaperPackageImporter.shared.inspectVideoCodec(url: url) { [weak self] isSupported, codecSubType in
+            AppLogger.shared.info("[CHATTER] Inspecting video codec subtype via AVFoundation for \(effectiveURL.lastPathComponent)...")
+            WallpaperPackageImporter.shared.inspectVideoCodec(url: effectiveURL) { [weak self] isSupported, codecSubType in
                 DispatchQueue.main.async {
+                    guard let self = self, generation == self.currentImportGeneration else {
+                        AppLogger.shared.info("[PLAYLIST] Discarded stale codec inspection result (generation: \(generation) vs current: \(self?.currentImportGeneration ?? 0))")
+                        return
+                    }
                     if isSupported {
                         AppLogger.shared.info("[CHATTER] Codec '\(codecSubType)' is supported natively by VideoToolbox. Applying video directly!")
-                        self?.applyVideo(url: url)
-                        completion?(.success(url))
+                        self.applyVideo(url: effectiveURL)
+                        completion?(.success(effectiveURL))
                     } else {
                         AppLogger.shared.info("[CHATTER] Codec '\(codecSubType)' (e.g. AV1/VP9) is NOT supported natively by AVPlayer. Auto-transcoding to HEVC cache...")
-                        let cacheVideoURL = cacheDir.appendingPathComponent("\(url.deletingPathExtension().lastPathComponent)_hevc_cache.mp4")
+                        let cacheVideoURL = cacheDir.appendingPathComponent("\(effectiveURL.deletingPathExtension().lastPathComponent)_hevc_cache.mp4")
                         
-                        WallpaperPackageImporter.shared.transcodeVideoToHEVC(inputURL: url, outputVideoURL: cacheVideoURL) { transcodeResult in
+                        WallpaperPackageImporter.shared.transcodeVideoToHEVC(inputURL: effectiveURL, outputVideoURL: cacheVideoURL) { transcodeResult in
                             DispatchQueue.main.async {
+                                guard let self = self, generation == self.currentImportGeneration else {
+                                    AppLogger.shared.info("[PLAYLIST] Discarded stale transcode result (generation: \(generation) vs current: \(self?.currentImportGeneration ?? 0))")
+                                    return
+                                }
                                 switch transcodeResult {
                                 case .success(let convertedVideoURL):
                                     AppLogger.shared.info("[CHATTER] Transcoding successful! Applying converted HEVC wallpaper...")
-                                    self?.applyVideo(url: convertedVideoURL)
+                                    self.applyVideo(url: convertedVideoURL)
                                     completion?(.success(convertedVideoURL))
                                 case .failure(let error):
                                     AppLogger.shared.error("[CHATTER] Transcoding failed: \(error.localizedDescription)")
