@@ -53,6 +53,13 @@ public final class DesktopWindowController: NSWindowController {
         contentView.wantsLayer = true
         guard let layer = contentView.layer else { return }
 
+        // Reuse existing AVPlayerLayer if already attached to this player instance
+        if let existing = self.playerLayer, existing.player === player {
+            existing.frame = layer.bounds
+            window.orderFrontRegardless()
+            return
+        }
+
         // Explicitly unbind player on existing playerLayer to release underlying VideoToolbox rendering resources
         self.playerLayer?.player = nil
         layer.sublayers?.forEach { sublayer in
