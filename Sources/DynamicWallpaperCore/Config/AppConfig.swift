@@ -35,6 +35,8 @@ public struct AppConfig: Codable, Equatable {
     public var isEmergencyPowerSavingEnabled: Bool
     public var powerSavingThreshold: Int
     public var appLanguage: String
+    /// Defines action taken upon passive system wake notification (e.g. resume playback).
+    /// NOTE: This does NOT forcefully wake the system or invoke IOPMAssertion.
     public var wakeUpAction: WakeUpAction
     public var isAudioDucked: Bool
     public var lastWallpaperPath: String?
@@ -46,6 +48,7 @@ public struct AppConfig: Codable, Equatable {
     public var ffmpegPath: String?
     public var enabledPluginIDs: [String]
 
+    /// Action policy when the system passively resumes from sleep.
     public enum WakeUpAction: String, Codable {
         case restart
         case resume

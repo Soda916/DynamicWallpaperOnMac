@@ -35,6 +35,8 @@ public final class WallpaperController: @unchecked Sendable {
         setupSleepWakeObservers()
     }
 
+    /// Passively observes OS sleep and wake events to pause or resume playback.
+    /// NOTE: This does NOT forcefully wake the system, issue synthetic input events, or use IOPMAssertion.
     private func setupSleepWakeObservers() {
         let center = NSWorkspace.shared.notificationCenter
         center.addObserver(forName: NSWorkspace.willSleepNotification, object: nil, queue: .main) { [weak self] _ in
