@@ -178,7 +178,15 @@ public final class MediaPlaybackCore: @unchecked Sendable {
 
     /// Load and stream video from a file URL without reading entire video into RAM.
     public func loadVideo(url: URL) {
-        stop()
+        fadeTimer?.invalidate()
+        fadeTimer = nil
+
+        if let observer = loopObserver {
+            NotificationCenter.default.removeObserver(observer)
+            loopObserver = nil
+        }
+        playerItemObserver?.invalidate()
+        playerItemObserver = nil
 
         self.currentURL = url
         let asset = AVURLAsset(url: url, options: [AVURLAssetPreferPreciseDurationAndTimingKey: false])
