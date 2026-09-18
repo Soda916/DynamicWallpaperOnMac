@@ -278,13 +278,14 @@ public final class WallpaperController: @unchecked Sendable {
 
             WallpaperPackageImporter.shared.convertGIFToHEVCVideo(gifURL: url, outputVideoURL: cacheVideoURL) { [weak self] result in
                 DispatchQueue.main.async {
-                    guard let self = self, generation == self.currentImportGeneration else {
-                        AppLogger.shared.info("[PLAYLIST] Discarded stale GIF conversion result (generation: \(generation) vs current: \(self?.currentImportGeneration ?? 0))")
+                    guard let strongSelf = self else { return }
+                    guard generation == strongSelf.currentImportGeneration else {
+                        AppLogger.shared.info("[PLAYLIST] Discarded stale GIF conversion result (generation: \(generation) vs current: \(strongSelf.currentImportGeneration))")
                         return
                     }
                     switch result {
                     case .success(let convertedVideoURL):
-                        self.applyVideo(url: convertedVideoURL)
+                        strongSelf.applyVideo(url: convertedVideoURL)
                         completion?(.success(convertedVideoURL))
                     case .failure(let error):
                         AppLogger.shared.error("[CHATTER] Failed to convert GIF: \(error.localizedDescription)")
@@ -296,13 +297,14 @@ public final class WallpaperController: @unchecked Sendable {
             AppLogger.shared.info("[CHATTER] Inspecting video codec subtype via AVFoundation for \(effectiveURL.lastPathComponent)...")
             WallpaperPackageImporter.shared.inspectVideoCodec(url: effectiveURL) { [weak self] isSupported, codecSubType in
                 DispatchQueue.main.async {
-                    guard let self = self, generation == self.currentImportGeneration else {
-                        AppLogger.shared.info("[PLAYLIST] Discarded stale codec inspection result (generation: \(generation) vs current: \(self?.currentImportGeneration ?? 0))")
+                    guard let strongSelf = self else { return }
+                    guard generation == strongSelf.currentImportGeneration else {
+                        AppLogger.shared.info("[PLAYLIST] Discarded stale codec inspection result (generation: \(generation) vs current: \(strongSelf.currentImportGeneration))")
                         return
                     }
                     if isSupported {
                         AppLogger.shared.info("[CHATTER] Codec '\(codecSubType)' is supported natively by VideoToolbox. Applying video directly!")
-                        self.applyVideo(url: effectiveURL)
+                        strongSelf.applyVideo(url: effectiveURL)
                         completion?(.success(effectiveURL))
                     } else {
                         AppLogger.shared.info("[CHATTER] Codec '\(codecSubType)' (e.g. AV1/VP9) is NOT supported natively by AVPlayer. Auto-transcoding to HEVC cache...")
@@ -310,14 +312,15 @@ public final class WallpaperController: @unchecked Sendable {
                         
                         WallpaperPackageImporter.shared.transcodeVideoToHEVC(inputURL: effectiveURL, outputVideoURL: cacheVideoURL) { transcodeResult in
                             DispatchQueue.main.async {
-                                guard let self = self, generation == self.currentImportGeneration else {
-                                    AppLogger.shared.info("[PLAYLIST] Discarded stale transcode result (generation: \(generation) vs current: \(self?.currentImportGeneration ?? 0))")
+                                guard let strongSelf = self else { return }
+                                guard generation == strongSelf.currentImportGeneration else {
+                                    AppLogger.shared.info("[PLAYLIST] Discarded stale transcode result (generation: \(generation) vs current: \(strongSelf.currentImportGeneration))")
                                     return
                                 }
                                 switch transcodeResult {
                                 case .success(let convertedVideoURL):
                                     AppLogger.shared.info("[CHATTER] Transcoding successful! Applying converted HEVC wallpaper...")
-                                    self.applyVideo(url: convertedVideoURL)
+                                    strongSelf.applyVideo(url: convertedVideoURL)
                                     completion?(.success(convertedVideoURL))
                                 case .failure(let error):
                                     AppLogger.shared.error("[CHATTER] Transcoding failed: \(error.localizedDescription)")
