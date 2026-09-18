@@ -7,6 +7,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.6-alpha] - 2026-09-18
+
+### Performance & Bug Fixes
+- **Asynchronous Race Condition & Crash Fixes (`WallpaperController`)**:
+  - Implemented an import generation token mechanism (`currentImportGeneration`) to invalidate stale asynchronous codec inspections and transcoding tasks during rapid track switching, resolving `EXC_BAD_ACCESS` crashes caused by competing `AVPlayerItem` pipeline operations.
+  - Fixed media path routing by consistently passing normalized `effectiveURL` into the playback and playlist storage pipelines.
+- **CALayer Desktop Surface Reuse Optimization (`DesktopWindowController`)**:
+  - Optimized `setPlayer` to reuse existing `AVPlayerLayer` instances when the shared `AVPlayer` reference matches. Eliminates redundant sublayer removal and reallocation, minimizing WindowServer overhead and display flickering.
+- **Smooth Item Transition Pipeline (`MediaPlaybackCore`)**:
+  - Eliminated the intermediate `replaceCurrentItem(with: nil)` invocation during track transitions in `loadVideo`, preventing KVO and playback duration notification bounce.
+- **Clarified Passive Sleep & Wake Architecture (`AppConfig` & Documentation)**:
+  - Added explicit documentation confirming that the engine purely responds to passive OS notifications (`NSWorkspace.didWakeNotification`) without invoking `IOPMAssertion` or triggering forced system wake-ups.
+- **Release Build Compilation Fix (`WallpaperController`)**:
+  - Resolved Swift release-mode variable unwrapping scope issues to ensure robust CI/CD builds.
+
 ## [0.1.5-alpha] - 2026-09-06
 
 ### Added & Refactored

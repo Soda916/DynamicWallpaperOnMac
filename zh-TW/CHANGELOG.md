@@ -7,6 +7,21 @@
 格式基於 [Keep a Changelog](https://keepachangelog.com/zh-TW/1.0.0/)，
 且本專案遵守 [語意化版本控制 (Semantic Versioning)](https://semver.org/spec/v2.0.0.html)。
 
+## [0.1.6-alpha] - 2026-09-18
+
+### 錯誤修復與穩定性改進 (Performance & Bug Fixes)
+- **非同步切換競態防禦與 Crash 修復 (`WallpaperController`)**：
+  - 引進「匯入世代識別鎖 (Generation Token)」機制。在使用者連續點擊「下一首/上一首」、連點播放列表或影片連續轉檔時，自動廢棄過期的非同步回呼，徹底解決多工搶佔同一個 `AVPlayer` 導致的 `EXC_BAD_ACCESS` 崩潰問題。
+  - 修正路徑傳遞錯誤：確保影片集中化後的 `effectiveURL` 正確傳入解碼管線與播放清單，避免路徑對應錯亂。
+- **全螢幕圖層渲染效能重構 (`DesktopWindowController`)**：
+  - 重構 `setPlayer` 邏輯：當底層播放器實例一致時，直接重用既有 `AVPlayerLayer` 並僅刷新 Bounds，不再重複從 CALayer 樹暴力銷毀與重新分配圖層，大幅降低 WindowServer 負載並消除切換畫面閃爍。
+- **播放管線平滑換軌 (`MediaPlaybackCore`)**：
+  - 移除換軌時不必要的置空過渡 (`replaceCurrentItem(with: nil)`)，改採直接平滑切換，消除 KVO 狀態與進度條在瞬間的劇烈震盪。
+- **電源與休眠語義規範澄清 (`AppConfig` & 代碼註解)**：
+  - 於核心代碼及配置層明確標註與澄清：本專案僅「被動接收」系統喚醒通知（`NSWorkspace.didWakeNotification`）以恢復桌布播放，絕無調用任何 `IOPMAssertion` 或進行系統級強制喚醒操作。
+- **Release 發布建置修復 (`WallpaperController`)**：
+  - 修正 Swift Release 編譯模式下的型別解包衝突，確保 GitHub Actions CI/CD 與正式版編譯 100% 穩定通過。
+
 ## [0.1.5-alpha] - 2026-09-06
 
 ### 新增與重構 (Added & Refactored)
